@@ -16,13 +16,13 @@ Vite and Prettier are the only dependencies, both for development; the game itse
 
 ## Controls
 
-| Action                             | Mouse                                           | Touch                               |
-| ---------------------------------- | ----------------------------------------------- | ----------------------------------- |
-| Aim                                | Move the pointer around the cue ball            | Drag on the table                   |
-| Shoot                              | Press, drag backward, release                   | Drag the power slider down, release |
-| Shoot (alternative)                | Drag the power slider on the left down, release |                                     |
-| Place the cue ball after a scratch | Drag the cue ball                               | Drag the cue ball                   |
-| New rack                           | `Reset Rack` button, bottom-right               | Same                                |
+| Action                             | Mouse                                                    | Touch                               |
+| ---------------------------------- | -------------------------------------------------------- | ----------------------------------- |
+| Aim                                | Move the pointer around the cue ball                     | Drag on the table                   |
+| Shoot                              | Press, drag backward, release                            | Drag the power slider down, release |
+| Shoot (alternative)                | Drag the power slider on the left down, release          |                                     |
+| Place the cue ball after a scratch | Drag the cue ball (the cursor turns into a hand over it) | Drag the cue ball                   |
+| New rack                           | `Reset Rack` button, bottom-right                        | Same                                |
 
 The bottom-left corner shows the frame rate and, as `worst`, the rate the slowest frame of each half second would give if every frame were that slow, so single hitches show up.
 

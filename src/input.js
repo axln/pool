@@ -24,8 +24,14 @@ export function bindInput(app) {
   canvas.addEventListener("pointermove", (event) =>
     handlePointerMove(app, event),
   );
-  canvas.addEventListener("pointerup", () => release(app.game, true));
-  canvas.addEventListener("pointercancel", () => release(app.game, false));
+  canvas.addEventListener("pointerup", (event) => {
+    release(app.game, true);
+    updateCursor(app, event);
+  });
+  canvas.addEventListener("pointercancel", (event) => {
+    release(app.game, false);
+    updateCursor(app, event);
+  });
   document
     .getElementById("reset")
     .addEventListener("click", () => rack(app.game));
@@ -40,24 +46,18 @@ function handlePointerDown(app, event) {
   if (game.state !== "aim") return;
   app.canvases.overlay.setPointerCapture(event.pointerId);
   game.drag = startDrag(app, event);
+  updateCursor(app, event);
 }
 
 function startDrag(app, event) {
   const game = app.game,
     point = toWorld(app.view, event),
-    cueBall = findCueBall(game),
     mouse = event.pointerType === "mouse";
   if (isInSlider(app.view.slider, event)) {
     setSliderPower(game, app.view.slider, event);
     return { type: "slider" };
   }
-  const grabRadius =
-    BALL_RADIUS * (mouse ? MOUSE_GRAB_RADIUS : TOUCH_GRAB_RADIUS);
-  if (
-    game.inHand &&
-    Math.hypot(point.x - cueBall.x, point.y - cueBall.y) < grabRadius
-  )
-    return { type: "place" };
+  if (canGrabCueBall(game, point, mouse)) return { type: "place" };
   if (mouse) return { type: "power", x: point.x, y: point.y }; // aim is locked while pulling back
   aimAt(game, point); // touch: drag to aim, slider to shoot
   return { type: "aim" };
@@ -77,8 +77,28 @@ function handlePointerMove(app, event) {
   const game = app.game,
     point = toWorld(app.view, event);
   game.hover = event.pointerType === "mouse" ? point : null;
+  updateCursor(app, event);
   if (game.state !== "aim" || !game.drag) return;
   DRAG_HANDLERS[game.drag.type](app, event, point);
+}
+
+// an open hand over a cue ball in hand, a closed one while placing it; otherwise the stylesheet's crosshair
+function updateCursor(app, event) {
+  const game = app.game,
+    point = toWorld(app.view, event),
+    canPlace =
+      game.state === "aim" &&
+      !game.drag &&
+      canGrabCueBall(game, point, event.pointerType === "mouse");
+  app.canvases.overlay.style.cursor =
+    game.drag?.type === "place" ? "grabbing" : canPlace ? "grab" : "";
+}
+
+function canGrabCueBall(game, point, mouse) {
+  if (!game.inHand) return false;
+  const cueBall = findCueBall(game),
+    grabRadius = BALL_RADIUS * (mouse ? MOUSE_GRAB_RADIUS : TOUCH_GRAB_RADIUS);
+  return Math.hypot(point.x - cueBall.x, point.y - cueBall.y) < grabRadius;
 }
 
 function toWorld(view, event) {
