@@ -1,4 +1,5 @@
-// Ball motion: sub-stepped movement, collisions, potting and the drop into the pocket. No DOM or GL here.
+// Ball motion: sub-stepped movement, collisions, potting and the drop into the pocket. No DOM, GL or audio here:
+// impacts are recorded in game.events ({ type, speed }) for the sound module to play.
 // Standard math notation (dx, vx, normalX) is kept in these hot loops for readability.
 import {
     PLAY_WIDTH, PLAY_HEIGHT, BALL_RADIUS, BALL_RESTITUTION, RAIL_RESTITUTION, DRAG, ROLLING_RESISTANCE,
@@ -17,8 +18,8 @@ export function step(game, dt) {
     const substepTime = dt / substeps;
     for (let substep = 0; substep < substeps; substep++) {
         moveBalls(game.balls, substepTime);
-        collideBalls(game.balls);
-        collideCushions(game.balls);
+        collideBalls(game.balls, game.events);
+        collideCushions(game.balls, game.events);
         capturePottedBalls(game);
     }
 }
@@ -43,7 +44,7 @@ function moveBalls(balls, time) {
     }
 }
 
-function collideBalls(balls) {
+function collideBalls(balls, events) {
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
             const first = balls[i], second = balls[j];
@@ -55,6 +56,7 @@ function collideBalls(balls) {
             second.x += normalX * overlap; second.y += normalY * overlap;
             const closingSpeed = (second.vx - first.vx) * normalX + (second.vy - first.vy) * normalY;
             if (closingSpeed < 0) {
+                events.push({ type: 'ball', speed: -closingSpeed });
                 const impulse = -(1 + BALL_RESTITUTION) * closingSpeed / 2;
                 first.vx -= impulse * normalX; first.vy -= impulse * normalY;
                 second.vx += impulse * normalX; second.vy += impulse * normalY;
@@ -63,7 +65,7 @@ function collideBalls(balls) {
     }
 }
 
-function collideCushions(balls) {
+function collideCushions(balls, events) {
     for (const ball of balls) {
         for (const [[startX, startY], [endX, endY]] of CUSHION_SEGMENTS) {
             const edgeX = endX - startX, edgeY = endY - startY;
@@ -75,6 +77,7 @@ function collideCushions(balls) {
             ball.x += normalX * (BALL_RADIUS - distance);
             ball.y += normalY * (BALL_RADIUS - distance);
             if (normalSpeed < 0) {
+                events.push({ type: 'rail', speed: -normalSpeed });
                 ball.vx -= (1 + RAIL_RESTITUTION) * normalSpeed * normalX;
                 ball.vy -= (1 + RAIL_RESTITUTION) * normalSpeed * normalY;
             }
@@ -88,6 +91,7 @@ function capturePottedBalls(game) {
         const ball = balls[i], pocket = findCapturingPocket(ball);
         if (!pocket) continue;
         balls.splice(i, 1);
+        game.events.push({ type: 'pocket', speed: Math.hypot(ball.vx, ball.vy) });
         const entrySpeedScale = Math.min(1, MAX_SINK_ENTRY_SPEED / (Math.hypot(ball.vx, ball.vy) || 1));
         game.sinking.push({
             number: ball.number, x: ball.x, y: ball.y, vx: ball.vx * entrySpeedScale, vy: ball.vy * entrySpeedScale,

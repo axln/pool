@@ -4,7 +4,7 @@ Browser pool game for self-play, a static Vite project. See `README.md` for cont
 
 ## Hard constraints
 
-- Plain ES modules in `src/`, loaded by `index.html`, served and built by Vite (`yarn dev`, `yarn build`). Vite is the only dev dependency; no runtime dependencies, no external assets. All graphics are procedural.
+- Plain ES modules in `src/`, loaded by `index.html`, served and built by Vite (`yarn dev`, `yarn build`). Vite is the only dev dependency; no runtime dependencies. All graphics are procedural. The only external assets are the CC0 sound clips in `public/sounds/`; any new asset must be CC0 or similarly free and credited in `public/sounds/CREDITS.md` (or a matching credits file).
 - No AI opponent, menus, login or shop. One person plays both sides.
 - The visual design is this game's own. Take generic pool-game cues (felt colour, line weight) from references, but do not copy another game's HUD, layout or art.
 
@@ -25,13 +25,14 @@ One responsibility per module; dependencies point from `main.js` down to `consta
 | `render.js` | `render`: one frame, table, shadows, balls, then the overlay |
 | `overlay.js` | `drawOverlay`: HUD, slider, aim guide, cue, messages on the 2D canvas |
 | `input.js` | `bindInput`: pointer events |
+| `sound.js` | `createSound`, `unlockSound`, `playSounds`: plays the clips in `public/sounds/` for `game.events` |
 | `main.js` | `main` (called from `index.html`) and the frame loop |
 
 - `main` creates the `app` object (`game`, `view`, renderer, canvases) and passes what each function needs. No module holds state of its own.
 - World units: playfield is 1000 × 500 with the origin at its top-left. Convert to CSS pixels with `toScreenX(view, x)`, `toScreenY(view, y)` from `view.js`.
 - `CUSHIONS` drives both the collision segments (`SEGS`) and the drawn cushions. Change geometry there, not in two places.
 - `POCKETS` radius is both the capture radius and the drawn hole radius.
-- `constants.js`, `game.js`, `physics.js`, `rules.js` and `selftest.js` must not touch the DOM or GL: the self-test runs `step` headless.
+- `constants.js`, `game.js`, `physics.js`, `rules.js` and `selftest.js` must not touch the DOM, GL or audio: the self-test runs `step` headless. Physics reports impacts by pushing `{ type, speed }` onto `game.events`; `main` hands them to `sound.js` and clears them each frame.
 - Balls and the table render in WebGL; HUD, slider, aim guide, cue and text render on the 2D canvas above it.
 
 ## Verifying changes
@@ -59,7 +60,7 @@ Headless gotchas:
 - `requestAnimationFrame` only fires a few frames under `--virtual-time-budget`, so a shot will not play out. To capture a mid-game state, make a temporary copy of `index.html` next to it whose module script does `const app = main();` and then sets `app.game` fields directly, screenshot that copy, then delete it.
 - Synthetic `PointerEvent`s make `setPointerCapture` throw; stub it in the temporary copy.
 
-Headless checks do not cover feel. Ball in hand, the slider, touch input and the 8-ball ending need a human to play them.
+Headless checks do not cover feel. Ball in hand, the slider, touch input, the 8-ball ending and how the sounds sound need a human to play them. To check that the clips load headlessly, run Chrome with `--autoplay-policy=no-user-gesture-required`, dispatch a `pointerdown`, and inspect `app.sound.samples`.
 
 ## Conventions
 

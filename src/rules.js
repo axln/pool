@@ -9,6 +9,7 @@ export function fire(game) {
     cueBall.vx = Math.cos(game.aim) * MAX_SHOT_SPEED * game.shotPower;
     cueBall.vy = Math.sin(game.aim) * MAX_SHOT_SPEED * game.shotPower;
     Object.assign(game, { potsThisShot: 0, scratch: false, inHand: false, state: 'moving' });
+    game.events.push({ type: 'cue', speed: game.shotPower });
 }
 
 export function settle(game) {

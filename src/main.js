@@ -8,6 +8,7 @@ import { layout } from './view.js';
 import { createRenderer, uploadTable } from './gl.js';
 import { render } from './render.js';
 import { bindInput, aimAt } from './input.js';
+import { createSound, unlockSound, playSounds } from './sound.js';
 
 const MAX_FRAME_TIME = 0.05; // longer gaps (a background tab) slow the game down instead of jumping the balls
 
@@ -21,9 +22,13 @@ export function main() {
         document.body.textContent = 'This game needs WebGL.';
         return null;
     }
-    const app = { game: createGame(), view: null, renderer, overlay: canvases.overlay.getContext('2d'), canvases, lastTime: 0 };
+    const app = {
+        game: createGame(), view: null, renderer, overlay: canvases.overlay.getContext('2d'), canvases, lastTime: 0,
+        sound: createSound(),
+    };
     resize(app);
     bindInput(app);
+    addEventListener('pointerdown', () => unlockSound(app.sound)); // browsers only allow audio after a user gesture
     addEventListener('resize', () => resize(app));
     requestAnimationFrame(time => frame(app, time));
     return app;
@@ -48,6 +53,8 @@ function frame(app, time) {
     const dt = Math.min(MAX_FRAME_TIME, (time - app.lastTime) / 1000);
     app.lastTime = time;
     advance(app.game, dt);
+    playSounds(app.sound, app.game.events);
+    app.game.events = [];
     render(app.renderer, app.overlay, app.view, app.game);
     requestAnimationFrame(next => frame(app, next));
 }

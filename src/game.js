@@ -11,7 +11,7 @@ export function createGame() {
     const game = {
         balls: [], sinking: [], potted: [], player: 1, state: 'aim', inHand: false,
         aim: 0, power: 0, shotPower: 0, strikeTime: 0, potsThisShot: 0, scratch: false,
-        message: '', drag: null, hover: null,
+        message: '', drag: null, hover: null, events: [],
     };
     rack(game);
     return game;
@@ -28,7 +28,7 @@ export function rack(game) {
     }
     Object.assign(game, {
         balls, sinking: [], potted: [], player: 1, state: 'aim', inHand: false, power: 0,
-        potsThisShot: 0, scratch: false, message: '', drag: null, aim: 0,
+        potsThisShot: 0, scratch: false, message: '', drag: null, aim: 0, events: [],
     });
 }
 

@@ -35,7 +35,7 @@ The rules are deliberately light, for self-play:
 - Potting the 8-ball ends the rack: a win if the other 14 balls are already down and the shot was not a scratch, a loss otherwise. Click to rack again.
 - Potted solids collect on the left of the top bar, stripes on the right.
 
-Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spin (english), sound.
+Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spin (english).
 
 ## How it works
 
@@ -54,6 +54,8 @@ Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spi
 **Rendering** uses two stacked canvases.
 - WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Its wood grain and felt noise come from fixed seeds, so it looks the same on every load. The felt shows the head string and head spot; the foot spot is left unmarked so the rack area stays clean. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas.
 - 2D canvas (above): HUD, power slider, aim guide (line, ghost ball, deflection lines), cue stick and messages.
+
+**Sound** (`src/sound.js`) plays recorded clips from `public/sounds/`: the "Pool And Billiards SFX" pack by Suraj Kispotta, CC0 (see `public/sounds/CREDITS.md`). Physics records each impact in `game.events` as `{ type, speed }` (`cue`, `ball`, `rail`, `pocket`). Every frame the loudest few are played, each with a random take of its clip, a slight pitch variation, and a volume that follows the impact speed. Browsers allow audio only after a user gesture, so the clips load and the sound starts with the first click or touch.
 
 **Game flow.** `game.state` is one of `aim`, `strike` (cue animation), `moving` or `over`. `settle()` runs when every ball has stopped and applies the rules above.
 
