@@ -3,14 +3,13 @@ import { TABLE_WIDTH, BALL_COLORS } from './constants.js';
 import { drawTable, createCanvas } from './table.js';
 
 const SHADER_MODE = { table: 0, shadow: 1, ball: 2 };
-const UNIFORMS = ['rect', 'mode', 'tex', 'm', 'col', 'n', 'px', 'alpha', 'dark', 'clip'];
+const UNIFORMS = ['rect', 'mode', 'tex', 'm', 'col', 'n', 'px', 'alpha', 'dark', 'clip', 'falloff'];
 const QUAD_CORNERS = [-1, -1, 1, -1, -1, 1, 1, 1];
 const BALL_RGB = BALL_COLORS.map(color => [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16) / 255));
 const ATLAS_TILE = 64; // number atlas: 4 x 4 tiles, tile n at (n % 4, n / 4 | 0)
 const ATLAS_FONT_SIZE = 0.62;
 const ATLAS_TEXT_DROP = 0.54; // a touch below the tile centre, so digits look optically centred
 const NO_CLIP = [0, 0, 1e9];
-const SHADOW_SIZE = 1.25; // shadow quad half-size, in ball radii
 export const IDENTITY = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 const VERTEX_SHADER = `attribute vec2 a; uniform vec4 u_rect; varying vec2 v;
@@ -18,12 +17,12 @@ void main(){ v = a; gl_Position = vec4(u_rect.xy + a * u_rect.zw, 0., 1.); }`;
 // ball surface: number spots at the two poles (body +-z), stripe band around body y, one red dot on the cue ball
 const FRAGMENT_SHADER = `precision highp float;
 varying vec2 v; uniform int u_mode; uniform sampler2D u_tex; uniform mat3 u_m; uniform vec3 u_col;
-uniform float u_n, u_px, u_alpha, u_dark; uniform vec3 u_clip;
+uniform float u_n, u_px, u_alpha, u_dark, u_falloff; uniform vec3 u_clip;
 const float SPOT = 0.47; const vec3 WHITE = vec3(.97, .96, .92);
 void main(){
   if (u_mode == 0) { gl_FragColor = texture2D(u_tex, vec2(v.x * .5 + .5, .5 - v.y * .5)); return; }   // table
   float r = length(v);
-  if (u_mode == 1) { gl_FragColor = vec4(0., 0., 0., .5 * smoothstep(1., .45, length((u_m * vec3(v, 0.)).xy)) * u_alpha); return; } // shadow, u_m squashes the stretched quad back to a disc
+  if (u_mode == 1) { gl_FragColor = vec4(0., 0., 0., smoothstep(1., u_falloff, length((u_m * vec3(v, 0.)).xy)) * u_alpha); return; } // shadow, u_m squashes the stretched quad back to a disc; full strength inside u_falloff
   vec2 P = vec2(v.x, -v.y);
   vec3 p = vec3(P, sqrt(max(0., 1. - r * r)));   // view-space point on the sphere
   vec3 q = u_m * p;                              // -> body space (u_m is the transposed orientation)
@@ -123,10 +122,12 @@ export function drawTableQuad(renderer, view, centerX, centerY, halfWidth, halfH
     renderer.gl.bindTexture(renderer.gl.TEXTURE_2D, renderer.atlasTexture); // balls sample the number atlas
 }
 
-// soft disc stretched by `stretch` along the unit direction (directionX, directionY), in GL axes
-export function drawShadow(renderer, view, centerX, centerY, radius, directionX, directionY, stretch) {
-    const { gl, uniforms } = renderer, halfSize = radius * SHADOW_SIZE * stretch;
-    gl.uniform1f(uniforms.alpha, 1);
+// a dark disc of `radius` that fades out from `falloff` (fraction of the radius) to its edge,
+// stretched by `stretch` along the unit direction (directionX, directionY), in GL axes
+export function drawShadow(renderer, view, centerX, centerY, radius, { strength, falloff, directionX = 1, directionY = 0, stretch = 1 }) {
+    const { gl, uniforms } = renderer, halfSize = radius * stretch;
+    gl.uniform1f(uniforms.alpha, strength);
+    gl.uniform1f(uniforms.falloff, falloff);
     gl.uniformMatrix3fv(uniforms.m, false,
         [directionX, -stretch * directionY, 0, directionY, stretch * directionX, 0, 0, 0, 1]);
     drawQuad(renderer, view, SHADER_MODE.shadow, centerX, centerY, halfSize, halfSize);
