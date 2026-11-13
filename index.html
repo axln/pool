@@ -38,6 +38,17 @@
         opacity: 0.55;
         cursor: pointer;
       }
+      #fps {
+        position: fixed;
+        left: 14px;
+        bottom: 12px;
+        font:
+          11px ui-monospace,
+          monospace;
+        color: #cfd6e4;
+        opacity: 0.45;
+        pointer-events: none;
+      }
       #reset:hover,
       #reset:focus-visible {
         opacity: 1;
@@ -48,6 +59,7 @@
     <canvas id="gl"></canvas>
     <canvas id="cv"></canvas>
     <button id="reset">Reset Rack</button>
+    <div id="fps"></div>
     <script type="module">
       import { main } from "./src/main.js";
       main();

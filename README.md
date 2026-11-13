@@ -24,6 +24,8 @@ Vite and Prettier are the only dependencies, both for development; the game itse
 | Place the cue ball after a scratch | Drag the cue ball                               | Drag the cue ball                   |
 | New rack                           | `Reset Rack` button, bottom-right               | Same                                |
 
+The bottom-left corner shows the frame rate and, as `worst`, the rate the slowest frame of each half second would give if every frame were that slow, so single hitches show up.
+
 Aim is locked while you pull back with the mouse. A pull shorter than 3% power cancels the shot.
 
 ## Rules

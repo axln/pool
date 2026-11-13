@@ -11,6 +11,7 @@ import { bindInput, aimAt } from "./input.js";
 import { createSound, unlockSound, playSounds } from "./sound.js";
 
 const MAX_FRAME_TIME = 0.05; // longer gaps (a background tab) slow the game down instead of jumping the balls
+const FPS_INTERVAL = 500; // ms between readouts of the frame-rate counter
 
 // returns the app state, or null without WebGL; headless checks use the return value
 export function main() {
@@ -32,6 +33,13 @@ export function main() {
     overlay: canvases.overlay.getContext("2d"),
     canvases,
     lastTime: 0,
+    fps: {
+      label: document.getElementById("fps"),
+      frames: 0,
+      since: 0,
+      last: 0,
+      worst: 0,
+    },
     sound: createSound(),
   };
   resize(app);
@@ -60,11 +68,29 @@ function resize(app) {
 function frame(app, time) {
   const dt = Math.min(MAX_FRAME_TIME, (time - app.lastTime) / 1000);
   app.lastTime = time;
+  countFrame(app.fps, time);
   advance(app.game, dt);
   playSounds(app.sound, app.game.events);
   app.game.events = [];
   render(app.renderer, app.overlay, app.view, app.game);
   requestAnimationFrame((next) => frame(app, next));
+}
+
+// the average frame rate, and as "worst" the rate if every frame were as slow as the slowest: an average hides a hitch
+function countFrame(fps, time) {
+  if (!fps.last) {
+    fps.last = fps.since = time; // the first frame only starts the clock
+    return;
+  }
+  fps.worst = Math.max(fps.worst, time - fps.last);
+  fps.last = time;
+  fps.frames++;
+  if (time - fps.since < FPS_INTERVAL) return;
+  const rate = Math.round((fps.frames * 1000) / (time - fps.since));
+  fps.label.textContent = `${rate} fps · worst ${Math.round(1000 / fps.worst)} fps`;
+  fps.frames = 0;
+  fps.worst = 0;
+  fps.since = time;
 }
 
 // order matters: a stroke that ends this frame already moves, and a shot that settles can be re-aimed at once
