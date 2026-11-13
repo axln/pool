@@ -4,7 +4,7 @@ Browser pool game for self-play, a static Vite project. See `README.md` for cont
 
 ## Hard constraints
 
-- Plain ES modules in `src/`, loaded by `index.html`, served and built by Vite (`yarn dev`, `yarn build`). Vite is the only dev dependency; no runtime dependencies. All graphics are procedural. The only external assets are the CC0 sound clips in `public/sounds/`; any new asset must be CC0 or similarly free and credited in `public/sounds/CREDITS.md` (or a matching credits file).
+- Plain ES modules in `src/`, loaded by `index.html`, served and built by Vite (`yarn dev`, `yarn build`). Vite and Prettier are the only dev dependencies; no runtime dependencies. All graphics are procedural. The only external assets are the CC0 sound clips in `public/sounds/`; any new asset must be CC0 or similarly free and credited in `public/sounds/CREDITS.md` (or a matching credits file).
 - No AI opponent, menus, login or shop. One person plays both sides.
 - The visual design is this game's own. Take generic pool-game cues (felt colour, line weight) from references, but do not copy another game's HUD, layout or art.
 
@@ -12,21 +12,21 @@ Browser pool game for self-play, a static Vite project. See `README.md` for cont
 
 One responsibility per module; dependencies point from `main.js` down to `constants.js`.
 
-| Module | Responsibility |
-|---|---|
-| `constants.js` | World size, tuning constants, pockets, cushions |
-| `game.js` | `createGame`, `rack`, `findCueBall`, `isFreeSpot` |
-| `physics.js` | `step` (motion, collisions, potting), `animateSinking` (pocket-drop animation) |
-| `rules.js` | `fire` (shot starts), `settle` (all balls stopped) |
-| `selftest.js` | `runSelfTest`: headless physics check |
-| `view.js` | `layout` (window fit, returns the view), world-to-pixel helpers, HUD positions |
-| `table.js` | `drawTable`: the procedural table canvas |
-| `gl.js` | `createRenderer`, shaders, `drawBall`, `drawShadow`, table/atlas textures |
-| `render.js` | `render`: one frame, table, shadows, balls, then the overlay |
-| `overlay.js` | `drawOverlay`: HUD, slider, aim guide, cue, messages on the 2D canvas |
-| `input.js` | `bindInput`: pointer events |
-| `sound.js` | `createSound`, `unlockSound`, `playSounds`: plays the clips in `public/sounds/` for `game.events` |
-| `main.js` | `main` (called from `index.html`) and the frame loop |
+| Module         | Responsibility                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `constants.js` | World size, tuning constants, pockets, cushions                                                   |
+| `game.js`      | `createGame`, `rack`, `findCueBall`, `isFreeSpot`                                                 |
+| `physics.js`   | `step` (motion, collisions, potting), `animateSinking` (pocket-drop animation)                    |
+| `rules.js`     | `fire` (shot starts), `settle` (all balls stopped)                                                |
+| `selftest.js`  | `runSelfTest`: headless physics check                                                             |
+| `view.js`      | `layout` (window fit, returns the view), world-to-pixel helpers, HUD positions                    |
+| `table.js`     | `drawTable`: the procedural table canvas                                                          |
+| `gl.js`        | `createRenderer`, shaders, `drawBall`, `drawShadow`, table/atlas textures                         |
+| `render.js`    | `render`: one frame, table, shadows, balls, then the overlay                                      |
+| `overlay.js`   | `drawOverlay`: HUD, slider, aim guide, cue, messages on the 2D canvas                             |
+| `input.js`     | `bindInput`: pointer events                                                                       |
+| `sound.js`     | `createSound`, `unlockSound`, `playSounds`: plays the clips in `public/sounds/` for `game.events` |
+| `main.js`      | `main` (called from `index.html`) and the frame loop                                              |
 
 - `main` creates the `app` object (`game`, `view`, renderer, canvases) and passes what each function needs. No module holds state of its own.
 - World units: playfield is 1000 × 500 with the origin at its top-left. Convert to CSS pixels with `toScreenX(view, x)`, `toScreenY(view, y)` from `view.js`.
@@ -70,7 +70,7 @@ Headless checks do not cover feel. Ball in hand, the slider, touch input, the 8-
 
 ## Code Style
 
-Format code consistently following standard conventions (e.g., 4 spaces, single quotes). Write new code in the existing style of the repository without reformatting untouched files.
+Formatting is Prettier with its default rules (2 spaces, double quotes, 80 columns), configured by an empty `.prettierrc`. Run `yarn format` after editing; `yarn format:check` must pass before committing.
 
 Follow Clean Code principles (Robert C. Martin) so that the code reads like prose. Treat these rules as guidelines for new code and edits rather than strict dogma: if a rule hurts clarity or performance, prioritize clarity and explain the deviation in a comment or response. On performance-critical paths (such as frame loops or real-time data processing), avoid splitting functions just for the sake of splitting—shared temporary variables and step ordering must remain obvious.
 

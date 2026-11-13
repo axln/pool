@@ -7,21 +7,21 @@ import {
   TABLE_HEIGHT,
   SINK_DURATION,
   LAMP_HEIGHT,
-  clamp
+  clamp,
 } from "./constants.js";
 import {
   toScreenX,
   toScreenY,
   HUD_BALL_RADIUS,
   hudBallX,
-  hudY
+  hudY,
 } from "./view.js";
 import {
   IDENTITY,
   clearLayer,
   drawTableQuad,
   drawShadow,
-  drawBall
+  drawBall,
 } from "./gl.js";
 import { drawOverlay } from "./overlay.js";
 
@@ -42,7 +42,7 @@ export function render(renderer, overlay, view, game) {
     view.originX + (PLAY_WIDTH * view.scale) / 2,
     view.originY + (PLAY_HEIGHT * view.scale) / 2,
     (TABLE_WIDTH * view.scale) / 2,
-    (TABLE_HEIGHT * view.scale) / 2
+    (TABLE_HEIGHT * view.scale) / 2,
   );
   drawSinkingBalls(renderer, view, game.sinking);
   drawShadows(renderer, view, game.balls);
@@ -78,9 +78,9 @@ function drawSinkingBalls(renderer, view, sinkingBalls) {
         clip: [
           toScreenX(view, pocket.x) * pixelRatio,
           (view.height - toScreenY(view, pocket.y)) * pixelRatio,
-          rimRadius * pixelRatio
-        ]
-      }
+          rimRadius * pixelRatio,
+        ],
+      },
     );
   }
 }
@@ -98,7 +98,7 @@ function drawShadows(renderer, view, balls) {
       toScreenX(view, ball.x),
       toScreenY(view, ball.y),
       radius * CONTACT_SHADOW.size,
-      CONTACT_SHADOW
+      CONTACT_SHADOW,
     );
   }
   for (const ball of balls) {
@@ -115,8 +115,8 @@ function drawShadows(renderer, view, balls) {
         ...LAMP_SHADOW,
         directionX: dx / distance,
         directionY: -dy / distance, // y flipped: GL y points up
-        stretch: Math.hypot(1, distance / LAMP_HEIGHT)
-      }
+        stretch: Math.hypot(1, distance / LAMP_HEIGHT),
+      },
     );
   }
 }
@@ -131,7 +131,7 @@ function drawBalls(renderer, view, balls) {
       ball.orientation,
       toScreenX(view, ball.x),
       toScreenY(view, ball.y),
-      radius
+      radius,
     );
 }
 
@@ -146,7 +146,7 @@ function drawPottedBalls(renderer, view, potted) {
         IDENTITY,
         hudBallX(view, number),
         hudY(view),
-        HUD_BALL_RADIUS
+        HUD_BALL_RADIUS,
       );
   }
 }

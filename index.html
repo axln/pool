@@ -1,24 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>8-Ball Pool</title>
-<style>
-html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 45%,#1b2330,#090b10 75%)}
-canvas{position:fixed;inset:0;width:100vw;height:100vh;touch-action:none;cursor:crosshair}
-#reset{position:fixed;right:14px;bottom:12px;padding:6px 12px;font:12px system-ui,sans-serif;color:#cfd6e4;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:14px;opacity:.55;cursor:pointer}
-#reset:hover,#reset:focus-visible{opacity:1}
-</style>
-</head>
-<body>
-<canvas id="gl"></canvas>
-<canvas id="cv"></canvas>
-<button id="reset">Reset Rack</button>
-<script type="module">
-import { main } from './src/main.js';
-main();
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,user-scalable=no"
+    />
+    <title>8-Ball Pool</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 45%, #1b2330, #090b10 75%);
+      }
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        touch-action: none;
+        cursor: crosshair;
+      }
+      #reset {
+        position: fixed;
+        right: 14px;
+        bottom: 12px;
+        padding: 6px 12px;
+        font:
+          12px system-ui,
+          sans-serif;
+        color: #cfd6e4;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        opacity: 0.55;
+        cursor: pointer;
+      }
+      #reset:hover,
+      #reset:focus-visible {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gl"></canvas>
+    <canvas id="cv"></canvas>
+    <button id="reset">Reset Rack</button>
+    <script type="module">
+      import { main } from "./src/main.js";
+      main();
+    </script>
+  </body>
 </html>
