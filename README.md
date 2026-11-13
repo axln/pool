@@ -52,8 +52,8 @@ Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spi
 - Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`rollBall`).
 
 **Rendering** uses two stacked canvases.
-- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Its wood grain and felt noise come from fixed seeds, so it looks the same on every load. The felt shows the head string and head spot; the foot spot is left unmarked so the rack area stays clean. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas. Each ball has two shadows: a tight contact shadow at its edge, and a soft lamp shadow that leans away from the table centre and stretches towards the rails (`CONTACT_SHADOW`, `LAMP_SHADOW` in `src/render.js`).
-- 2D canvas (above): HUD, power slider, aim guide (line, ghost ball, deflection lines), cue stick and messages.
+- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Its wood grain and felt noise come from fixed seeds, so it looks the same on every load. Each cushion has a lit rubber bevel along its nose and both pocket jaws. The felt shows the head string and head spot; the foot spot is left unmarked so the rack area stays clean. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas. Each ball has two shadows: a tight contact shadow at its edge, and a soft lamp shadow that leans away from the table centre and stretches towards the rails (`CONTACT_SHADOW`, `LAMP_SHADOW` in `src/render.js`).
+- 2D canvas (above): HUD, power slider, aim guide (line, ghost ball, deflection lines, with a soft dark outline), cue stick and messages.
 
 **Sound** (`src/sound.js`) plays recorded clips from `public/sounds/`: the "Pool And Billiards SFX" pack by Suraj Kispotta, CC0 (see `public/sounds/CREDITS.md`). Physics records each impact in `game.events` as `{ type, speed }` (`cue`, `ball`, `rail`, `pocket`). Every frame the loudest few are played, each with a random take of its clip, a slight pitch variation, and a volume that follows the impact speed. Browsers allow audio only after a user gesture, so the clips load and the sound starts with the first click or touch.
 
@@ -69,10 +69,22 @@ The constants in `src/constants.js` control the feel:
 | `DRAG`, `ROLLING_RESISTANCE` | Friction: proportional and constant parts |
 | `BALL_RESTITUTION`, `RAIL_RESTITUTION` | Restitution for ball–ball and cushion hits |
 | `CORNER_MOUTH`, `SIDE_MOUTH` | Half-width of the corner and side pocket mouths |
+| `SIDE_JAW_SLANT` | How much the side pocket jaws narrow towards the back; more covers the hole's rim |
 | `POCKETS` | Centre and capture radius of each pocket |
 | `SINK_DURATION` | Seconds a potted ball takes to drop out of sight |
 | `STRIKE_DURATION` | Seconds of cue-stroke animation before the cue ball moves |
 | `LAMP_HEIGHT` | Height of the lamp over the table centre; lower it for longer shadows |
+
+Look and sound settings sit at the top of the module that uses them:
+
+| Constant | Where | Meaning |
+|---|---|---|
+| `CONTACT_SHADOW`, `LAMP_SHADOW` | `src/render.js` | Size, darkness and softness of the two ball shadows |
+| `FELT_LIGHT`, `FELT_SHADE` | `src/table.js` | Lit centre of the felt and the darkening towards the rails |
+| `BEVEL_WIDTH`, `BEVEL_STOPS` | `src/table.js` | Width and colours of the lit rubber edge on the cushions |
+| `GRAIN_SEED`, `NOISE_SEED` | `src/table.js` | Seeds for the wood grain and felt noise; change for a different pattern |
+| `GUIDE_OUTLINE`, `GUIDE_OUTLINE_WIDTH` | `src/overlay.js` | Dark outline around the white aim guide |
+| `MASTER_VOLUME`, `FULL_VOLUME_SPEED` | `src/sound.js` | Overall volume, and how hard a hit must be to play at full volume |
 
 ## Self-test
 
