@@ -8,24 +8,7 @@ const HEAD_SPOT = { x: PLAY_WIDTH / 4, y: PLAY_HEIGHT / 2 };
 const FOOT_SPOT = { x: PLAY_WIDTH * 0.75, y: PLAY_HEIGHT / 2 };
 
 export function createGame() {
-  const game = {
-    balls: [],
-    sinking: [],
-    potted: [],
-    player: 1,
-    state: "aim",
-    inHand: false,
-    aim: 0,
-    power: 0,
-    shotPower: 0,
-    strikeTime: 0,
-    potsThisShot: 0,
-    scratch: false,
-    message: "",
-    drag: null,
-    hover: null,
-    events: [],
-  };
+  const game = { shotPower: 0, strikeTime: 0, hover: null }; // rack sets the rest
   rack(game);
   return game;
 }

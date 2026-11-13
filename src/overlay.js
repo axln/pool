@@ -9,8 +9,8 @@ import {
 } from "./constants.js";
 import { findCueBall } from "./game.js";
 import { HUD_BALL_RADIUS, hudBallX, hudY } from "./view.js";
+import { FULL_TURN, gradient } from "./table.js";
 
-const FULL_TURN = 2 * Math.PI;
 const HUD_HEIGHT = 44;
 const SLIDER_RADIUS = 11;
 const SLIDER_STOPS = [
@@ -368,12 +368,6 @@ function drawCuePart(context, tipX, [from, to, widthFrom, widthTo], fill) {
   context.lineTo(tipX - to, widthTo / 2);
   context.lineTo(tipX - from, widthFrom / 2);
   context.fill();
-}
-
-function gradient(canvasGradient, stops) {
-  for (const [offset, color] of stops)
-    canvasGradient.addColorStop(offset, color);
-  return canvasGradient;
 }
 
 function drawMessage(context, view, message) {

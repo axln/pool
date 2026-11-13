@@ -11,7 +11,7 @@ import {
   clamp,
 } from "./constants.js";
 
-const FULL_TURN = 2 * Math.PI;
+export const FULL_TURN = 2 * Math.PI;
 const FRAME_CORNER_RADIUS = 28;
 const WOOD_STOPS = [
   [0, "#8f3426"],
@@ -487,7 +487,7 @@ function fillBevel(context, polygon, inner, [normalX, normalY], edge) {
   context.fill();
 }
 
-function gradient(canvasGradient, stops) {
+export function gradient(canvasGradient, stops) {
   for (const [offset, color] of stops)
     canvasGradient.addColorStop(offset, color);
   return canvasGradient;

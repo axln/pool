@@ -131,18 +131,13 @@ function capturePottedBalls(game) {
       pocket = findCapturingPocket(ball);
     if (!pocket) continue;
     balls.splice(i, 1);
-    game.events.push({ type: "pocket", speed: Math.hypot(ball.vx, ball.vy) });
-    const entrySpeedScale = Math.min(
-      1,
-      MAX_SINK_ENTRY_SPEED / (Math.hypot(ball.vx, ball.vy) || 1),
-    );
+    const speed = Math.hypot(ball.vx, ball.vy),
+      entrySpeedScale = Math.min(1, MAX_SINK_ENTRY_SPEED / (speed || 1));
+    game.events.push({ type: "pocket", speed });
     game.sinking.push({
-      number: ball.number,
-      x: ball.x,
-      y: ball.y,
+      ...ball,
       vx: ball.vx * entrySpeedScale,
       vy: ball.vy * entrySpeedScale,
-      orientation: ball.orientation,
       pocket,
       time: 0,
     });
@@ -215,7 +210,8 @@ function bounceOffPocketWall(sinking) {
   sinking.vy -= (POCKET_WALL_BOUNCE * outwardSpeed * dy) / distance;
 }
 
-// roll without slipping: rotate the ball's orientation about the in-plane axis square to its travel
+// roll without slipping: rotate the ball's orientation about the in-plane axis square to its travel.
+// Updated in place, column by column: this runs per ball per sub-step, and fresh arrays here caused GC hitches.
 function rollBall(ball, dx, dy) {
   const distance = Math.hypot(dx, dy);
   if (!distance) return;
@@ -225,26 +221,17 @@ function rollBall(ball, dx, dy) {
   const cos = Math.cos(angle),
     sin = Math.sin(angle),
     versine = 1 - cos,
-    current = ball.orientation;
-  const rotation = [
-    cos + versine * axisX * axisX,
-    versine * axisX * axisY,
-    sin * axisY,
-    versine * axisX * axisY,
-    cos + versine * axisY * axisY,
-    -sin * axisX,
-    -sin * axisY,
-    sin * axisX,
-    cos,
-  ];
-  const result = [];
-  for (let row = 0; row < 3; row++) {
-    for (let column = 0; column < 3; column++) {
-      result[row * 3 + column] =
-        rotation[row * 3] * current[column] +
-        rotation[row * 3 + 1] * current[3 + column] +
-        rotation[row * 3 + 2] * current[6 + column];
-    }
+    orientation = ball.orientation;
+  const xx = cos + versine * axisX * axisX,
+    xy = versine * axisX * axisY,
+    yy = cos + versine * axisY * axisY;
+  for (let column = 0; column < 3; column++) {
+    const top = orientation[column],
+      middle = orientation[3 + column],
+      bottom = orientation[6 + column];
+    orientation[column] = xx * top + xy * middle + sin * axisY * bottom;
+    orientation[3 + column] = xy * top + yy * middle - sin * axisX * bottom;
+    orientation[6 + column] =
+      -sin * axisY * top + sin * axisX * middle + cos * bottom;
   }
-  ball.orientation = result;
 }
