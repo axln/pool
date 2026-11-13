@@ -1,10 +1,10 @@
 # 8-Ball Pool
 
-A single-file, zero-dependency 8-ball pool game for the browser. One person plays both sides on one screen: no menus, no login, no AI opponent.
+A zero-dependency 8-ball pool game for the browser. One person plays both sides on one screen: no menus, no login, no AI opponent.
 
 ## Run
 
-Open `index.html` in any modern browser. There is no build step and nothing to install. WebGL is required.
+Serve the folder and open it in any modern browser, for example `npx serve .` or `python3 -m http.server`. ES modules do not load from `file://`, so opening `index.html` directly shows a blank page. There is no build step and nothing to install. WebGL is required.
 
 ## Controls
 
@@ -32,7 +32,7 @@ Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spi
 
 ## How it works
 
-Everything lives in `index.html`: markup, CSS and about 500 lines of JavaScript.
+`index.html` holds the markup and CSS and loads `src/main.js`. The JavaScript is split into small ES modules, one responsibility each; see the table in `CLAUDE.md`.
 
 **Coordinates.** The playfield is 1000 × 500 world units with the origin at its top-left; the ball radius is 11.25 (regulation ratio). `layout()` computes one scale and offset to fit the window, and re-runs on resize.
 
@@ -42,30 +42,32 @@ Everything lives in `index.html`: markup, CSS and about 500 lines of JavaScript.
 - Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.75.
 - Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
 - Pockets: a ball is potted when its centre comes within the pocket's capture radius.
-- Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`spin`).
+- Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`rollBall`).
 
 **Rendering** uses two stacked canvases.
-- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`makeTable`) and uploaded as a texture. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas.
+- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas.
 - 2D canvas (above): HUD, power slider, aim guide (line, ghost ball, deflection lines), cue stick and messages.
 
-**Game flow.** `state` is one of `aim`, `strike` (cue animation), `moving` or `over`. `settle()` runs when every ball has stopped and applies the rules above.
+**Game flow.** `game.state` is one of `aim`, `strike` (cue animation), `moving` or `over`. `settle()` runs when every ball has stopped and applies the rules above.
 
 ## Tuning
 
-The constants at the top of the script control the feel:
+The constants in `src/constants.js` control the feel:
 
 | Constant | Meaning |
 |---|---|
-| `MAXV` | Cue-ball speed at full power |
-| `DRAG`, `ROLL` | Friction: proportional and constant parts |
-| `E_BALL`, `E_RAIL` | Restitution for ball–ball and cushion hits |
-| `CG`, `SG` | Half-width of the corner and side pocket mouths |
+| `MAX_SHOT_SPEED` | Cue-ball speed at full power |
+| `DRAG`, `ROLLING_RESISTANCE` | Friction: proportional and constant parts |
+| `BALL_RESTITUTION`, `RAIL_RESTITUTION` | Restitution for ball–ball and cushion hits |
+| `CORNER_MOUTH`, `SIDE_MOUTH` | Half-width of the corner and side pocket mouths |
 | `POCKETS` | Centre and capture radius of each pocket |
-| `SINK` | Seconds a potted ball takes to drop out of sight |
+| `SINK_DURATION` | Seconds a potted ball takes to drop out of sight |
+| `STRIKE_DURATION` | Seconds of cue-stroke animation before the cue ball moves |
+| `LAMP_HEIGHT` | Height of the lamp over the table centre; lower it for longer shadows |
 
 ## Self-test
 
-Open `index.html?test`. It simulates 20 full-power breaks without rendering and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
+Open `index.html?test` from the local server. It simulates 20 full-power breaks without rendering and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
 
 ## Known limits
 
