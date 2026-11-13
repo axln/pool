@@ -6,8 +6,8 @@ export const BALL_RADIUS = 11.25;
 export const CUSHION_DEPTH = 18;
 export const FRAME_WIDTH = 52;
 const CORNER_MOUTH = 34; // half-width of a corner pocket mouth
-const SIDE_MOUTH = 24; // half-width of a side pocket mouth
-const SIDE_JAW_SLANT = 2; // jaws narrow the side mouth this much per side at the back; more would cover the hole's rim
+const SIDE_MOUTH = 32; // half-width of a side pocket mouth
+const SIDE_JAW_SLANT = 12; // jaws narrow the side mouth this much per side at the back (about 124°); more would cover the hole's rim
 export const TABLE_WIDTH = PLAY_WIDTH + 2 * FRAME_WIDTH;
 export const TABLE_HEIGHT = PLAY_HEIGHT + 2 * FRAME_WIDTH;
 
