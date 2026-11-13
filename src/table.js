@@ -34,6 +34,10 @@ const FELT_LIGHT_REACH = 0.62; // of the playfield width
 const FELT_LIGHT_STOPS = [[0, 'rgba(165,225,255,.42)'], [0.55, 'rgba(120,190,240,0)'], [1, 'rgba(3,18,48,.45)']];
 const POCKET_STOPS = [[0, '#000'], [0.75, '#070707'], [1, '#2b2b2b']];
 const CUSHION_STOPS = [[0, '#a5dcfa'], [0.2, '#62b0e4'], [0.3, '#4494d0'], [1, '#2f78b3']];
+const BEVEL_WIDTH = 0.3 * CUSHION_DEPTH; // lit rubber strip along the nose and both jaws
+const BEVEL_STOPS = [[0, '#a5dcfa'], [0.67, '#62b0e4'], [1, '#4494d0']];
+const CUSHION_EDGES = 4; // polygon edges: jaw, nose, jaw, back
+const BACK_EDGE = 3;
 const CUSHION_SHADOW_COLOR = 'rgba(0,12,36,.6)';
 const CUSHION_SHADOW_BLUR = 10;
 
@@ -175,7 +179,7 @@ function metalGradient(context, startX, startY, endX, endY) {
     return gradient(context.createLinearGradient(startX, startY, endX, endY), METAL_STOPS);
 }
 
-// head string, foot spot and head spot
+// head string and head spot; the foot spot is deliberately unmarked
 function drawMarkings(context) {
     context.strokeStyle = 'rgba(190,230,255,.5)';
     context.lineWidth = 1.2;
@@ -184,7 +188,6 @@ function drawMarkings(context) {
     context.lineTo(PLAY_WIDTH / 4, PLAY_HEIGHT);
     context.stroke();
     context.fillStyle = 'rgba(255,255,255,.75)';
-    drawDot(context, PLAY_WIDTH * 0.75, PLAY_HEIGHT / 2, 3);
     drawDot(context, PLAY_WIDTH / 4, PLAY_HEIGHT / 2, 2);
 }
 
@@ -225,15 +228,51 @@ function drawCushionShadow(context, polygon, scale) {
     context.restore();
 }
 
-// bright bevel at the nose, darker towards the back, edged on both long sides
+// the rubber body, then a lit bevel along the nose and both jaws, mitred so the highlight wraps around each corner
 function drawCushionBody(context, polygon) {
+    const normals = polygon.map((point, edge) => inwardNormal(polygon, edge));
+    const inner = insetPolygon(polygon, normals);
     context.save();
     fillCushion(context, polygon);
     context.restore();
+    for (let edge = 0; edge < BACK_EDGE; edge++) fillBevel(context, polygon, inner, normals[edge], edge);
     context.lineWidth = 1;
-    context.lineCap = 'round';
-    strokeLine(context, polygon[1], polygon[2], 'rgba(255,255,255,.55)');
+    context.lineCap = context.lineJoin = 'round';
+    strokePolyline(context, polygon, 'rgba(255,255,255,.55)');
     strokeLine(context, polygon[0], polygon[3], 'rgba(0,10,30,.4)');
+}
+
+function inwardNormal(polygon, edge) {
+    const [startX, startY] = polygon[edge], [endX, endY] = polygon[(edge + 1) % CUSHION_EDGES];
+    const length = Math.hypot(endX - startX, endY - startY);
+    let normalX = -(endY - startY) / length, normalY = (endX - startX) / length;
+    const centerX = polygon.reduce((sum, [x]) => sum + x, 0) / CUSHION_EDGES;
+    const centerY = polygon.reduce((sum, [, y]) => sum + y, 0) / CUSHION_EDGES;
+    if (normalX * (centerX - startX) + normalY * (centerY - startY) < 0) {
+        normalX = -normalX;
+        normalY = -normalY;
+    }
+    return [normalX, normalY];
+}
+
+// inner corner of the bevel at each vertex: where the two neighbouring edges, moved inward, cross
+function insetPolygon(polygon, normals) {
+    return polygon.map((point, vertex) => {
+        const previous = (vertex + CUSHION_EDGES - 1) % CUSHION_EDGES;
+        return intersectLines(shiftedEdge(polygon, normals, previous), shiftedEdge(polygon, normals, vertex));
+    });
+}
+
+// the back edge stays put; the others move inward by the bevel width
+function shiftedEdge(polygon, normals, edge) {
+    const shift = edge === BACK_EDGE ? 0 : BEVEL_WIDTH, [normalX, normalY] = normals[edge];
+    const [startX, startY] = polygon[edge], [endX, endY] = polygon[(edge + 1) % CUSHION_EDGES];
+    return { x: startX + normalX * shift, y: startY + normalY * shift, dx: endX - startX, dy: endY - startY };
+}
+
+function intersectLines(first, second) {
+    const along = ((second.x - first.x) * second.dy - (second.y - first.y) * second.dx) / (first.dx * second.dy - first.dy * second.dx);
+    return [first.x + first.dx * along, first.y + first.dy * along];
 }
 
 function fillCushion(context, polygon) {
@@ -249,6 +288,17 @@ function fillCushion(context, polygon) {
     context.fill();
 }
 
+// shaded across the strip, from the bright edge inward, whatever the edge's angle
+function fillBevel(context, polygon, inner, [normalX, normalY], edge) {
+    const next = (edge + 1) % CUSHION_EDGES, [startX, startY] = polygon[edge];
+    context.fillStyle = gradient(context.createLinearGradient(startX, startY,
+        startX + normalX * BEVEL_WIDTH, startY + normalY * BEVEL_WIDTH), BEVEL_STOPS);
+    context.beginPath();
+    for (const [x, y] of [polygon[edge], polygon[next], inner[next], inner[edge]]) context.lineTo(x, y);
+    context.closePath();
+    context.fill();
+}
+
 function gradient(canvasGradient, stops) {
     for (const [offset, color] of stops) canvasGradient.addColorStop(offset, color);
     return canvasGradient;
@@ -259,5 +309,13 @@ function strokeLine(context, [startX, startY], [endX, endY], color) {
     context.beginPath();
     context.moveTo(startX, startY);
     context.lineTo(endX, endY);
+    context.stroke();
+}
+
+// the highlight runs along the jaw, the nose and the other jaw in one stroke, so the corners join smoothly
+function strokePolyline(context, points, color) {
+    context.strokeStyle = color;
+    context.beginPath();
+    for (const [x, y] of points) context.lineTo(x, y);
     context.stroke();
 }
