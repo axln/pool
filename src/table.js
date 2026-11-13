@@ -1,6 +1,6 @@
 // The table, drawn once per resize on an offscreen 2D canvas: frame, castings, felt, pockets and cushions.
 import {
-    PLAY_WIDTH, PLAY_HEIGHT, CUSHION_DEPTH, FRAME_WIDTH, TABLE_WIDTH, TABLE_HEIGHT, POCKETS, CUSHIONS,
+    PLAY_WIDTH, PLAY_HEIGHT, CUSHION_DEPTH, FRAME_WIDTH, TABLE_WIDTH, TABLE_HEIGHT, POCKETS, CUSHIONS, clamp,
 } from './constants.js';
 
 const FULL_TURN = 2 * Math.PI;
@@ -31,7 +31,10 @@ const NOISE_SIZE = 128;
 const NOISE_MAX_ALPHA = 26;
 const NOISE_SEED = 2;
 const FELT_LIGHT_REACH = 0.62; // of the playfield width
-const FELT_LIGHT_STOPS = [[0, 'rgba(165,225,255,.42)'], [0.55, 'rgba(120,190,240,0)'], [1, 'rgba(3,18,48,.45)']];
+// eased falloffs sampled into many stops: a few linear stops leave a visible ring where the slope changes
+const FELT_LIGHT = { color: '165,225,255', alpha: 0.42, from: 0, to: 0.6 }; // lit centre, fading out
+const FELT_SHADE = { color: '3,18,48', alpha: 0.45, from: 0.35, to: 1 }; // darker towards the rails
+const FALLOFF_STOPS = 24;
 const POCKET_STOPS = [[0, '#000'], [0.75, '#070707'], [1, '#2b2b2b']];
 const CUSHION_STOPS = [[0, '#a5dcfa'], [0.2, '#62b0e4'], [0.3, '#4494d0'], [1, '#2f78b3']];
 const BEVEL_WIDTH = 0.3 * CUSHION_DEPTH; // lit rubber strip along the nose and both jaws
@@ -132,9 +135,21 @@ function drawFelt(context) {
     context.fillStyle = context.createPattern(createNoise(), 'repeat');
     context.fillRect(x, y, width, height);
     const centerX = PLAY_WIDTH / 2, centerY = PLAY_HEIGHT / 2;
-    context.fillStyle = gradient(context.createRadialGradient(centerX, centerY, 0, centerX, centerY, PLAY_WIDTH * FELT_LIGHT_REACH), FELT_LIGHT_STOPS);
+    const reach = PLAY_WIDTH * FELT_LIGHT_REACH;
+    context.fillStyle = gradient(context.createRadialGradient(centerX, centerY, 0, centerX, centerY, reach), easedStops(FELT_LIGHT, true));
+    context.fillRect(x, y, width, height);
+    context.fillStyle = gradient(context.createRadialGradient(centerX, centerY, 0, centerX, centerY, reach), easedStops(FELT_SHADE, false));
     context.fillRect(x, y, width, height);
     drawPocketBacking(context);
+}
+
+// smoothstep between from and to, so the alpha has no kink anywhere; fading runs it backwards
+function easedStops({ color, alpha, from, to }, fading) {
+    return Array.from({ length: FALLOFF_STOPS + 1 }, (unused, index) => {
+        const offset = index / FALLOFF_STOPS, progress = clamp((offset - from) / (to - from), 0, 1);
+        const eased = progress * progress * (3 - 2 * progress);
+        return [offset, `rgba(${color},${(alpha * (fading ? 1 - eased : eased)).toFixed(3)})`];
+    });
 }
 
 function createNoise() {

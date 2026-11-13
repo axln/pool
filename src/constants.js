@@ -7,6 +7,7 @@ export const CUSHION_DEPTH = 18;
 export const FRAME_WIDTH = 52;
 const CORNER_MOUTH = 34; // half-width of a corner pocket mouth
 const SIDE_MOUTH = 24; // half-width of a side pocket mouth
+const SIDE_JAW_SLANT = 2; // jaws narrow the side mouth this much per side at the back; more would cover the hole's rim
 export const TABLE_WIDTH = PLAY_WIDTH + 2 * FRAME_WIDTH;
 export const TABLE_HEIGHT = PLAY_HEIGHT + 2 * FRAME_WIDTH;
 
@@ -29,7 +30,7 @@ export const POCKETS = [
 // cushion polygons: [back-a, nose-a, nose-b, back-b]; the other four are mirrors
 const TOP_LEFT_CUSHION = [
     [CORNER_MOUTH - CUSHION_DEPTH, -CUSHION_DEPTH], [CORNER_MOUTH, 0],
-    [PLAY_WIDTH / 2 - SIDE_MOUTH, 0], [PLAY_WIDTH / 2 - SIDE_MOUTH + 6, -CUSHION_DEPTH],
+    [PLAY_WIDTH / 2 - SIDE_MOUTH, 0], [PLAY_WIDTH / 2 - SIDE_MOUTH + SIDE_JAW_SLANT, -CUSHION_DEPTH],
 ];
 const LEFT_CUSHION = [
     [-CUSHION_DEPTH, CORNER_MOUTH - CUSHION_DEPTH], [0, CORNER_MOUTH],
