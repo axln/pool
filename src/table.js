@@ -7,6 +7,7 @@ const FULL_TURN = 2 * Math.PI;
 const FRAME_CORNER_RADIUS = 28;
 const WOOD_STOPS = [[0, '#8f3426'], [0.5, '#5c1c15'], [1, '#7e2a1f']];
 const GRAIN_LINES = 80;
+const GRAIN_SEED = 1; // fixed seeds: the table looks the same on every load and resize
 const GRAIN_STYLE = 'rgba(0,0,0,.13)';
 const GRAIN_WIDTH = 0.8;
 const GRAIN_WAVE = 12;
@@ -28,6 +29,7 @@ const SIGHT_COLOR = '#e3e9f7';
 const FELT_COLOR = '#2f80ba';
 const NOISE_SIZE = 128;
 const NOISE_MAX_ALPHA = 26;
+const NOISE_SEED = 2;
 const FELT_LIGHT_REACH = 0.62; // of the playfield width
 const FELT_LIGHT_STOPS = [[0, 'rgba(165,225,255,.42)'], [0.55, 'rgba(120,190,240,0)'], [1, 'rgba(3,18,48,.45)']];
 const POCKET_STOPS = [[0, '#000'], [0.75, '#070707'], [1, '#2b2b2b']];
@@ -67,20 +69,21 @@ function drawFrame(context) {
 }
 
 function drawWoodGrain(context) {
+    const random = createRandom(GRAIN_SEED);
     context.strokeStyle = GRAIN_STYLE;
     context.lineWidth = GRAIN_WIDTH;
     for (let line = 0; line < GRAIN_LINES; line++) {
-        const y = -FRAME_WIDTH + Math.random() * TABLE_HEIGHT;
+        const y = -FRAME_WIDTH + random() * TABLE_HEIGHT;
         context.beginPath();
         context.moveTo(-FRAME_WIDTH, y);
-        context.bezierCurveTo(PLAY_WIDTH * 0.3, y + jitter(GRAIN_WAVE), PLAY_WIDTH * 0.7, y + jitter(GRAIN_WAVE),
-            PLAY_WIDTH + FRAME_WIDTH, y + jitter(GRAIN_END_WAVE));
+        context.bezierCurveTo(PLAY_WIDTH * 0.3, y + jitter(random, GRAIN_WAVE), PLAY_WIDTH * 0.7, y + jitter(random, GRAIN_WAVE),
+            PLAY_WIDTH + FRAME_WIDTH, y + jitter(random, GRAIN_END_WAVE));
         context.stroke();
     }
 }
 
-function jitter(amount) {
-    return (Math.random() - 0.5) * amount;
+function jitter(random, amount) {
+    return (random() - 0.5) * amount;
 }
 
 function drawCornerPlates(context) {
@@ -132,13 +135,24 @@ function drawFelt(context) {
 
 function createNoise() {
     const canvas = createCanvas(NOISE_SIZE, NOISE_SIZE), context = canvas.getContext('2d');
-    const image = context.createImageData(NOISE_SIZE, NOISE_SIZE);
+    const image = context.createImageData(NOISE_SIZE, NOISE_SIZE), random = createRandom(NOISE_SEED);
     for (let i = 0; i < image.data.length; i += 4) {
-        image.data[i] = image.data[i + 1] = image.data[i + 2] = Math.random() < 0.5 ? 0 : 255;
-        image.data[i + 3] = Math.random() * NOISE_MAX_ALPHA;
+        image.data[i] = image.data[i + 1] = image.data[i + 2] = random() < 0.5 ? 0 : 255;
+        image.data[i + 3] = random() * NOISE_MAX_ALPHA;
     }
     context.putImageData(image, 0, 0);
     return canvas;
+}
+
+// mulberry32: a tiny seeded generator, returns floats in [0, 1)
+function createRandom(seed) {
+    let state = seed;
+    return function random() {
+        state = state + 0x6d2b79f5 | 0;
+        let mixed = Math.imul(state ^ state >>> 15, 1 | state);
+        mixed = mixed + Math.imul(mixed ^ mixed >>> 7, 61 | mixed) ^ mixed;
+        return ((mixed ^ mixed >>> 14) >>> 0) / 4294967296;
+    };
 }
 
 export function createCanvas(width, height) {

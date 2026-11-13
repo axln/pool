@@ -1,10 +1,10 @@
 # 8-Ball Pool
 
-Browser pool game for self-play, no build step. See `README.md` for controls, rules and architecture; `prompt.md` is the original brief.
+Browser pool game for self-play, a static Vite project. See `README.md` for controls, rules and architecture; `prompt.md` is the original brief.
 
 ## Hard constraints
 
-- Plain ES modules in `src/`, loaded by `index.html`: no build step, no dependencies, no external assets. All graphics are procedural.
+- Plain ES modules in `src/`, loaded by `index.html`, served and built by Vite (`yarn dev`, `yarn build`). Vite is the only dev dependency; no runtime dependencies, no external assets. All graphics are procedural.
 - No AI opponent, menus, login or shop. One person plays both sides.
 - The visual design is this game's own. Take generic pool-game cues (felt colour, line weight) from references, but do not copy another game's HUD, layout or art.
 
@@ -36,13 +36,13 @@ One responsibility per module; dependencies point from `main.js` down to `consta
 
 ## Verifying changes
 
-Modules do not load from `file://`, so serve the folder first (`npx serve .` or `python3 -m http.server 8765`). The commands below assume port 8765.
+Start the dev server first with `yarn dev` (run it in the background); the commands below assume its default port 5173.
 
 Run the physics self-test after any change to `step`, the constants, cushions or pockets. The title must read `TEST PASS`:
 
 ```sh
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --enable-unsafe-swiftshader \
-  --virtual-time-budget=4000 --dump-dom "http://127.0.0.1:8765/index.html?test" 2>/dev/null | grep -o '<title>[^<]*'
+  --virtual-time-budget=4000 --dump-dom "http://localhost:5173/?test" 2>/dev/null | grep -o '<title>[^<]*'
 ```
 
 Take a screenshot after any visual change and look at it:
@@ -50,7 +50,7 @@ Take a screenshot after any visual change and look at it:
 ```sh
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --enable-unsafe-swiftshader \
   --window-size=1280,760 --force-device-scale-factor=2 --virtual-time-budget=1500 \
-  --screenshot=/tmp/pool-shot.png "http://127.0.0.1:8765/index.html"
+  --screenshot=/tmp/pool-shot.png "http://localhost:5173/"
 ```
 
 Headless gotchas:
@@ -65,7 +65,7 @@ Headless checks do not cover feel. Ball in hand, the slider, touch input and the
 
 - Keep it small: no abstractions, options or features that were not asked for.
 - Comments explain why, in one line. A deliberate limit is marked `// shortcut: <limit>, <when to upgrade>`.
-- Refactors are checked against a baseline taken before the change: `TEST PASS`, a checksum of ball positions after scripted breaks, and pixel-identical screenshots of fixed scenes with `Math.random` seeded.
+- Refactors are checked against a baseline taken before the change: `TEST PASS`, a checksum of ball positions after scripted breaks, and pixel-identical screenshots of fixed scenes (the table texture is seeded, so screenshots are reproducible).
 
 ## Code Style
 

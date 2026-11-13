@@ -1,10 +1,17 @@
 # 8-Ball Pool
 
-A zero-dependency 8-ball pool game for the browser. One person plays both sides on one screen: no menus, no login, no AI opponent.
+A dependency-free 8-ball pool game for the browser. One person plays both sides on one screen: no menus, no login, no AI opponent.
 
 ## Run
 
-Serve the folder and open it in any modern browser, for example `npx serve .` or `python3 -m http.server`. ES modules do not load from `file://`, so opening `index.html` directly shows a blank page. There is no build step and nothing to install. WebGL is required.
+```sh
+yarn install
+yarn dev        # dev server with hot reload at http://localhost:5173
+yarn build      # static site in dist/, deployable to any static host
+yarn preview    # serve the built dist/ locally
+```
+
+Vite is the only dependency, and only for development; the game itself uses no libraries. WebGL is required.
 
 ## Controls
 
@@ -45,7 +52,7 @@ Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spi
 - Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`rollBall`).
 
 **Rendering** uses two stacked canvases.
-- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas.
+- WebGL (below): the table, ball shadows and balls. The table is drawn procedurally once per resize on an offscreen 2D canvas (`drawTable`) and uploaded as a texture. Its wood grain and felt noise come from fixed seeds, so it looks the same on every load. Each ball is a quad whose fragment shader ray-casts a sphere, maps the stripe, number spot and cue-ball dot through the ball's orientation, and applies lighting. Numbers come from a small generated texture atlas.
 - 2D canvas (above): HUD, power slider, aim guide (line, ghost ball, deflection lines), cue stick and messages.
 
 **Game flow.** `game.state` is one of `aim`, `strike` (cue animation), `moving` or `over`. `settle()` runs when every ball has stopped and applies the rules above.
@@ -67,7 +74,7 @@ The constants in `src/constants.js` control the feel:
 
 ## Self-test
 
-Open `index.html?test` from the local server. It simulates 20 full-power breaks without rendering and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
+Open `http://localhost:5173/?test` while `yarn dev` runs. It simulates 20 full-power breaks without rendering and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
 
 ## Known limits
 
