@@ -17,6 +17,8 @@ export const RAIL_RESTITUTION = 0.75;
 export const DRAG = 0.6;
 export const ROLLING_RESISTANCE = 40;
 export const SINK_DURATION = 0.5; // seconds a potted ball takes to drop out of sight
+export const ANNOUNCEMENT_HOLD = 1.5; // seconds a table-centre announcement stays fully visible
+export const ANNOUNCEMENT_FADE = 0.8; // seconds it then takes to fade out
 export const STRIKE_DURATION = 0.08; // seconds of cue-stroke animation before the ball moves
 export const LAMP_HEIGHT = 1200; // lamp height over the table centre; high so edge shadows only lean a little
 

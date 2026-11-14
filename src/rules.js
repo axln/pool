@@ -7,14 +7,19 @@ import {
 } from "./constants.js";
 import { createBall, findCueBall, isFreeSpot } from "./game.js";
 
-const BALL_COUNT = 15;
+const EIGHT_BALL = 8;
+const GROUP_BALLS = {
+  solids: [1, 2, 3, 4, 5, 6, 7],
+  stripes: [9, 10, 11, 12, 13, 14, 15],
+};
+const OTHER_GROUP = { solids: "stripes", stripes: "solids" };
 
 export function fire(game) {
   const cueBall = findCueBall(game);
   cueBall.vx = Math.cos(game.aim) * MAX_SHOT_SPEED * game.shotPower;
   cueBall.vy = Math.sin(game.aim) * MAX_SHOT_SPEED * game.shotPower;
   Object.assign(game, {
-    potsThisShot: 0,
+    shotPotted: [],
     scratch: false,
     inHand: false,
     state: "moving",
@@ -23,21 +28,55 @@ export function fire(game) {
 }
 
 export function settle(game) {
-  if (game.potted.includes(8)) {
+  if (game.potted.includes(EIGHT_BALL)) {
     endRack(game);
     return;
   }
   if (game.scratch) respotCueBall(game);
-  if (game.scratch || !game.potsThisShot) game.player = 3 - game.player;
+  else assignGroups(game);
+  if (game.scratch || !pottedOwnBall(game)) game.player = 3 - game.player;
   game.state = "aim";
 }
 
+// the first ball potted on an open table decides the shooter's group; the opponent gets the other
+function assignGroups(game) {
+  const firstPotted = game.shotPotted[0];
+  if (!firstPotted || game.groups[game.player]) return;
+  const group = GROUP_BALLS.solids.includes(firstPotted) ? "solids" : "stripes";
+  game.groups[game.player] = group;
+  game.groups[3 - game.player] = OTHER_GROUP[group];
+  game.announcement = { player: game.player, group, age: 0 };
+}
+
+function pottedOwnBall(game) {
+  const group = game.groups[game.player];
+  return game.shotPotted.some((number) => GROUP_BALLS[group]?.includes(number));
+}
+
 function endRack(game) {
-  const won = game.potted.length === BALL_COUNT && !game.scratch;
+  const fault = eightBallFault(game);
   game.state = "over";
-  game.message = won
-    ? `Table cleared — Player ${game.player} wins!`
-    : `8-ball foul — Player ${game.player} loses`;
+  game.message = fault
+    ? `${fault} — Player ${game.player} loses`
+    : `8-ball in — Player ${game.player} wins!`;
+}
+
+function eightBallFault(game) {
+  if (game.scratch) return "Cue ball potted with the 8-ball";
+  if (!hasClearedGroupBeforeShot(game)) return "8-ball potted too early";
+  return "";
+}
+
+// potting the last group ball and the 8-ball in one shot does not count
+function hasClearedGroupBeforeShot(game) {
+  const group = GROUP_BALLS[game.groups[game.player]];
+  return (
+    !!group &&
+    group.every(
+      (number) =>
+        game.potted.includes(number) && !game.shotPotted.includes(number),
+    )
+  );
 }
 
 // back on the head string, stepping alternately down and up until the spot is free

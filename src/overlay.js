@@ -4,14 +4,20 @@ import {
   PLAY_HEIGHT,
   BALL_RADIUS,
   FRAME_WIDTH,
+  LAMP_HEIGHT,
   TABLE_WIDTH,
   STRIKE_DURATION,
+  ANNOUNCEMENT_HOLD,
+  ANNOUNCEMENT_FADE,
 } from "./constants.js";
 import { findCueBall } from "./game.js";
 import { HUD_BALL_RADIUS, hudBallX, hudY } from "./view.js";
 import { FULL_TURN, gradient } from "./table.js";
 
 const HUD_HEIGHT = 44;
+const GROUP_LABELS = { solids: "Solids", stripes: "Stripes" };
+const GROUP_END_BALLS = { solids: [1, 7], stripes: [9, 15] }; // the HUD slots a group spans
+const HUD_DIM_COLOR = "rgba(12,15,21,.65)"; // the page background, laid over the idle player's slots
 const SLIDER_RADIUS = 11;
 const SLIDER_STOPS = [
   [0, "#3ecf6e"],
@@ -25,8 +31,13 @@ const IN_HAND_RING = 1.8; // dashed ring around a cue ball in hand, in ball radi
 const CUE_PULL_PER_POWER = 120; // world units the cue draws back at full power
 const CUE_FOLLOW_THROUGH = 4;
 const CUE_GAP = 5; // between the cue tip and the ball at rest
-const CUE_SHADOW_OFFSET = [4, 6];
-const CUE_SHADOW_COLOR = "rgba(0,0,0,.25)";
+const CUE_TIP_HEIGHT = BALL_RADIUS; // the tip meets the ball at its centre height
+const CUE_TILT = 0.18; // the cue rises this much per unit of length towards the butt
+// a faint wide layer under a darker core gives the shadow a soft edge; spread widens each side
+const CUE_SHADOW_LAYERS = [
+  { spread: 2.5, color: "rgba(0,0,0,.09)" },
+  { spread: 0, color: "rgba(0,0,0,.2)" },
+];
 const SHAFT_STOPS = [
   [0, "#ecd09a"],
   [1, "#c4914f"],
@@ -77,10 +88,9 @@ export function drawOverlay(context, view, game) {
     pixelRatio * originY,
   );
   drawCueBallTools(context, game);
-  if (game.message) {
-    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    drawMessage(context, view, game.message);
-  }
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  if (game.message) drawMessage(context, view, game.message);
+  if (game.announcement) drawAnnouncement(context, view, game.announcement);
 }
 
 function drawHud(context, view, game) {
@@ -98,6 +108,7 @@ function drawHud(context, view, game) {
   );
   context.fill();
   drawEmptySlots(context, view, game.potted, y);
+  dimIdlePlayerSlots(context, view, game, y);
   drawPlayerLabel(context, game, left + width / 2, y);
   drawPowerSlider(context, view.slider, game.power);
 }
@@ -114,12 +125,37 @@ function drawEmptySlots(context, view, potted, y) {
   }
 }
 
+// the player who is not shooting gets their group's slots, potted balls included, dimmed
+function dimIdlePlayerSlots(context, view, game, y) {
+  const idleGroup = game.groups[3 - game.player];
+  if (!idleGroup) return;
+  const slotXs = GROUP_END_BALLS[idleGroup].map((number) =>
+      hudBallX(view, number),
+    ),
+    left = Math.min(...slotXs) - HUD_BALL_RADIUS,
+    right = Math.max(...slotXs) + HUD_BALL_RADIUS;
+  context.fillStyle = HUD_DIM_COLOR;
+  context.beginPath();
+  context.roundRect(
+    left,
+    y - HUD_BALL_RADIUS,
+    right - left,
+    2 * HUD_BALL_RADIUS,
+    HUD_BALL_RADIUS,
+  );
+  context.fill();
+}
+
 function drawPlayerLabel(context, game, x, y) {
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillStyle = "#fff";
   context.font = "600 16px system-ui,sans-serif";
-  context.fillText(`Player ${game.player}`, x, game.inHand ? y - 7 : y);
+  context.fillText(
+    playerCaption(game.player, game.groups[game.player]),
+    x,
+    game.inHand ? y - 7 : y,
+  );
   if (!game.inHand) return;
   context.fillStyle = "rgba(255,255,255,.65)";
   context.font = "11px system-ui,sans-serif";
@@ -342,28 +378,50 @@ function strokeGuide(context, path) {
 
 // the shadow pass draws the body only, offset; the real pass adds the trim
 function drawCue(context, cueBall, aim, pull) {
-  for (const shadow of [true, false]) {
-    context.save();
-    context.translate(
-      cueBall.x + (shadow ? CUE_SHADOW_OFFSET[0] : 0),
-      cueBall.y + (shadow ? CUE_SHADOW_OFFSET[1] : 0),
-    );
-    context.rotate(aim);
-    const tipX = -(BALL_RADIUS + CUE_GAP + pull);
-    const shaft = gradient(
-      context.createLinearGradient(tipX - 11, 0, tipX - 260, 0),
-      SHAFT_STOPS,
-    );
-    for (const part of CUE_BODY)
-      drawCuePart(
-        context,
-        tipX,
-        part,
-        shadow ? CUE_SHADOW_COLOR : part[4] === "shaft" ? shaft : part[4],
-      );
-    if (!shadow)
-      for (const part of CUE_TRIM) drawCuePart(context, tipX, part, part[4]);
-    context.restore();
+  const tipX = -(BALL_RADIUS + CUE_GAP + pull);
+  drawCueShadow(context, cueBall, aim, tipX);
+  context.save();
+  context.translate(cueBall.x, cueBall.y);
+  context.rotate(aim);
+  const shaft = gradient(
+    context.createLinearGradient(tipX - 11, 0, tipX - 260, 0),
+    SHAFT_STOPS,
+  );
+  for (const part of CUE_BODY)
+    drawCuePart(context, tipX, part, part[4] === "shaft" ? shaft : part[4]);
+  for (const part of CUE_TRIM) drawCuePart(context, tipX, part, part[4]);
+  context.restore();
+}
+
+// the cue is lit by the lamp over the table centre, like the balls: each point of it casts its shadow
+// outward from the centre by its height over the felt, and the raised butt end throws it furthest
+function drawCueShadow(context, cueBall, aim, tipX) {
+  const cos = Math.cos(aim),
+    sin = Math.sin(aim);
+  for (const { spread, color } of CUE_SHADOW_LAYERS) {
+    context.fillStyle = color;
+    for (const [from, to, widthFrom, widthTo] of CUE_BODY) {
+      const corners = [
+        [from, -widthFrom],
+        [to, -widthTo],
+        [to, widthTo],
+        [from, widthFrom],
+      ];
+      context.beginPath();
+      corners.forEach(([distance, width], index) => {
+        const alongCue = tipX - distance,
+          acrossCue = width / 2 + Math.sign(width) * spread,
+          x = cueBall.x + alongCue * cos - acrossCue * sin,
+          y = cueBall.y + alongCue * sin + acrossCue * cos,
+          height = CUE_TIP_HEIGHT + distance * CUE_TILT,
+          lean = height / (LAMP_HEIGHT - height),
+          shadowX = x + (x - PLAY_WIDTH / 2) * lean,
+          shadowY = y + (y - PLAY_HEIGHT / 2) * lean;
+        if (index) context.lineTo(shadowX, shadowY);
+        else context.moveTo(shadowX, shadowY);
+      });
+      context.fill();
+    }
   }
 }
 
@@ -378,8 +436,7 @@ function drawCuePart(context, tipX, [from, to, widthFrom, widthTo], fill) {
 }
 
 function drawMessage(context, view, message) {
-  const centerX = view.originX + (PLAY_WIDTH * view.scale) / 2,
-    centerY = view.originY + (PLAY_HEIGHT * view.scale) / 2;
+  const { centerX, centerY } = tableCenter(view);
   context.fillStyle = "rgba(8,10,14,.82)";
   context.beginPath();
   context.roundRect(
@@ -398,4 +455,35 @@ function drawMessage(context, view, message) {
   context.fillStyle = "rgba(255,255,255,.6)";
   context.font = "13px system-ui,sans-serif";
   context.fillText("Click to rack again", centerX, centerY + 18);
+}
+
+// fully visible for the hold time, then fading linearly to nothing
+function drawAnnouncement(context, view, { player, group, age }) {
+  const { centerX, centerY } = tableCenter(view);
+  context.globalAlpha = Math.min(
+    1,
+    1 - (age - ANNOUNCEMENT_HOLD) / ANNOUNCEMENT_FADE,
+  );
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = "700 34px system-ui,sans-serif";
+  context.shadowColor = "rgba(0,0,0,.7)";
+  context.shadowBlur = 12;
+  context.fillStyle = "#fff";
+  context.fillText(playerCaption(player, group), centerX, centerY);
+  context.globalAlpha = 1;
+  context.shadowBlur = 0;
+}
+
+function playerCaption(player, group) {
+  return group
+    ? `Player ${player} · ${GROUP_LABELS[group]}`
+    : `Player ${player}`;
+}
+
+function tableCenter(view) {
+  return {
+    centerX: view.originX + (PLAY_WIDTH * view.scale) / 2,
+    centerY: view.originY + (PLAY_HEIGHT * view.scale) / 2,
+  };
 }

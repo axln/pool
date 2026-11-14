@@ -143,7 +143,7 @@ function capturePottedBalls(game) {
     });
     if (ball.number) {
       game.potted.push(ball.number);
-      game.potsThisShot++;
+      game.shotPotted.push(ball.number);
     } else {
       game.scratch = true;
     }

@@ -37,12 +37,12 @@ Aim is locked while you pull back with the mouse. A pull shorter than 3% power c
 The rules are deliberately light, for self-play:
 
 - Standard triangle rack, 8-ball in the centre, cue ball on the head string.
-- The top bar shows whose turn it is. The turn passes when a shot pots nothing or scratches; otherwise the same player shoots again.
+- The top bar shows whose turn it is, and the player's group once assigned. The first ball potted on the open table (without a scratch) gives that player its group, solids or stripes; the opponent gets the other, announced for a moment in the table centre. The turn passes when a shot pots none of the shooter's own balls or scratches; otherwise the same player shoots again.
 - Scratch: the cue ball returns to the head string and is in hand: press anywhere on the table and drag to move it to any free spot, release to drop it. The aim guide then appears and you shoot as usual; until the shot you can still grab the cue ball (hand cursor over it) and move it again.
-- Potting the 8-ball ends the rack: a win if the other 14 balls are already down and the shot was not a scratch, a loss otherwise. Click to rack again.
+- Potting the 8-ball ends the rack: a win if the shooter's group was already cleared by an earlier shot and the cue ball stayed up, a loss otherwise (the message says why).
 - Potted solids collect on the left of the top bar, stripes on the right.
 
-Not implemented: solids/stripes group enforcement, call-pocket, break fouls, spin (english).
+Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 
 ## How it works
 

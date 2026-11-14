@@ -1,5 +1,9 @@
 // Entry point: optional self-test, then the frame loop driven by the display refresh.
-import { STRIKE_DURATION } from "./constants.js";
+import {
+  STRIKE_DURATION,
+  ANNOUNCEMENT_HOLD,
+  ANNOUNCEMENT_FADE,
+} from "./constants.js";
 import { createGame } from "./game.js";
 import { step, animateSinking } from "./physics.js";
 import { fire, settle } from "./rules.js";
@@ -99,6 +103,7 @@ function advance(game, dt) {
     fire(game);
   if (game.state === "moving") step(game, dt); // one step per displayed frame (sub-stepped inside): no beat against the refresh rate
   animateSinking(game, dt);
+  ageAnnouncement(game, dt);
   if (
     game.state === "moving" &&
     !game.sinking.length &&
@@ -106,4 +111,11 @@ function advance(game, dt) {
   )
     settle(game);
   if (game.state === "aim" && !game.drag && game.hover) aimAt(game, game.hover);
+}
+
+function ageAnnouncement(game, dt) {
+  if (!game.announcement) return;
+  game.announcement.age += dt;
+  if (game.announcement.age > ANNOUNCEMENT_HOLD + ANNOUNCEMENT_FADE)
+    game.announcement = null;
 }
