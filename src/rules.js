@@ -51,4 +51,5 @@ function respotCueBall(game) {
   }
   game.balls.push(createBall(0, x, y));
   game.inHand = true;
+  game.handPlaced = false;
 }

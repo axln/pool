@@ -29,6 +29,7 @@ export function rack(game) {
     player: 1,
     state: "aim",
     inHand: false,
+    handPlaced: false,
     power: 0,
     potsThisShot: 0,
     scratch: false,

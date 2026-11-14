@@ -123,7 +123,13 @@ function drawPlayerLabel(context, game, x, y) {
   if (!game.inHand) return;
   context.fillStyle = "rgba(255,255,255,.65)";
   context.font = "11px system-ui,sans-serif";
-  context.fillText("Ball in hand — drag the cue ball", x, y + 10);
+  context.fillText(
+    game.handPlaced
+      ? "Ball in hand — drag the cue ball to move it"
+      : "Ball in hand — drag to place it",
+    x,
+    y + 10,
+  );
 }
 
 function drawPowerSlider(context, slider, power) {
@@ -167,12 +173,13 @@ function drawPowerSlider(context, slider, power) {
   );
 }
 
-// ball-in-hand ring, aim guide and cue while aiming; the cue alone during the stroke
+// ball-in-hand ring, aim guide and cue while aiming (none of the latter before the first placement); the cue alone during the stroke
 function drawCueBallTools(context, game) {
   const cueBall = findCueBall(game);
   if (!cueBall) return;
   if (game.state === "aim") {
     if (game.inHand) drawInHandRing(context, cueBall);
+    if (game.inHand && !game.handPlaced) return; // first placement: no aim guide or cue yet
     if (game.drag?.type === "place") return;
     drawGuide(context, game, cueBall);
     drawCue(context, cueBall, game.aim, game.power * CUE_PULL_PER_POWER);

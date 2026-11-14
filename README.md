@@ -20,13 +20,13 @@ Vite and Prettier are the only dependencies, both for development; the game itse
 
 ## Controls
 
-| Action                             | Mouse                                                    | Touch                               |
-| ---------------------------------- | -------------------------------------------------------- | ----------------------------------- |
-| Aim                                | Move the pointer around the cue ball                     | Drag on the table                   |
-| Shoot                              | Press, drag backward, release                            | Drag the power slider down, release |
-| Shoot (alternative)                | Drag the power slider on the left down, release          |                                     |
-| Place the cue ball after a scratch | Drag the cue ball (the cursor turns into a hand over it) | Drag the cue ball                   |
-| New rack                           | `Reset Rack` button, bottom-right                        | Same                                |
+| Action                             | Mouse                                             | Touch                               |
+| ---------------------------------- | ------------------------------------------------- | ----------------------------------- |
+| Aim                                | Move the pointer around the cue ball              | Drag on the table                   |
+| Shoot                              | Press, drag backward, release                     | Drag the power slider down, release |
+| Shoot (alternative)                | Drag the power slider on the left down, release   |                                     |
+| Place the cue ball after a scratch | Drag anywhere on the table (the cursor is a hand) | Drag the cue ball                   |
+| New rack                           | `Reset Rack` button, bottom-right                 | Same                                |
 
 The bottom-left corner shows the frame rate and, as `worst`, the rate the slowest frame of each half second would give if every frame were that slow, so single hitches show up.
 
@@ -38,7 +38,7 @@ The rules are deliberately light, for self-play:
 
 - Standard triangle rack, 8-ball in the centre, cue ball on the head string.
 - The top bar shows whose turn it is. The turn passes when a shot pots nothing or scratches; otherwise the same player shoots again.
-- Scratch: the cue ball returns to the head string and can be dragged to any free spot before the next shot.
+- Scratch: the cue ball returns to the head string and is in hand: press anywhere on the table and drag to move it to any free spot, release to drop it. The aim guide then appears and you shoot as usual; until the shot you can still grab the cue ball (hand cursor over it) and move it again.
 - Potting the 8-ball ends the rack: a win if the other 14 balls are already down and the shot was not a scratch, a loss otherwise. Click to rack again.
 - Potted solids collect on the left of the top bar, stripes on the right.
 

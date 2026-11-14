@@ -57,7 +57,7 @@ function startDrag(app, event) {
     setSliderPower(game, app.view.slider, event);
     return { type: "slider" };
   }
-  if (canGrabCueBall(game, point, mouse)) return { type: "place" };
+  if (canStartPlacing(game, point, mouse)) return startPlacing(game, point);
   if (mouse) return { type: "power", x: point.x, y: point.y }; // aim is locked while pulling back
   aimAt(game, point); // touch: drag to aim, slider to shoot
   return { type: "aim" };
@@ -82,23 +82,32 @@ function handlePointerMove(app, event) {
   DRAG_HANDLERS[game.drag.type](app, event, point);
 }
 
-// an open hand over a cue ball in hand, a closed one while placing it; otherwise the stylesheet's crosshair
+// an open hand over the whole table until the ball is first placed, then over the ball only, a closed one while moving it; otherwise the stylesheet's crosshair
 function updateCursor(app, event) {
   const game = app.game,
     point = toWorld(app.view, event),
     canPlace =
       game.state === "aim" &&
       !game.drag &&
-      canGrabCueBall(game, point, event.pointerType === "mouse");
+      !isInSlider(app.view.slider, event) &&
+      canStartPlacing(game, point, event.pointerType === "mouse");
   app.canvases.overlay.style.cursor =
     game.drag?.type === "place" ? "grabbing" : canPlace ? "grab" : "";
 }
 
-function canGrabCueBall(game, point, mouse) {
+// until the first drop a mouse can press anywhere to place the ball; after that, and for a finger, the ball itself must be grabbed
+function canStartPlacing(game, point, mouse) {
   if (!game.inHand) return false;
+  if (mouse && !game.handPlaced) return true;
   const cueBall = findCueBall(game),
     grabRadius = BALL_RADIUS * (mouse ? MOUSE_GRAB_RADIUS : TOUCH_GRAB_RADIUS);
   return Math.hypot(point.x - cueBall.x, point.y - cueBall.y) < grabRadius;
+}
+
+// remembers the pointer-to-ball offset so the ball moves by the pointer's delta instead of jumping
+function startPlacing(game, point) {
+  const cueBall = findCueBall(game);
+  return { type: "place", dx: cueBall.x - point.x, dy: cueBall.y - point.y };
 }
 
 function toWorld(view, event) {
@@ -141,19 +150,21 @@ export function aimAt(game, point) {
 }
 
 function dragCueBall(app, event, point) {
-  const x = clamp(point.x, BALL_RADIUS, PLAY_WIDTH - BALL_RADIUS),
-    y = clamp(point.y, BALL_RADIUS, PLAY_HEIGHT - BALL_RADIUS);
+  const drag = app.game.drag,
+    x = clamp(point.x + drag.dx, BALL_RADIUS, PLAY_WIDTH - BALL_RADIUS),
+    y = clamp(point.y + drag.dy, BALL_RADIUS, PLAY_HEIGHT - BALL_RADIUS);
   if (!isFreeSpot(app.game, x, y)) return;
   const cueBall = findCueBall(app.game);
   cueBall.x = x;
   cueBall.y = y;
 }
 
-// a power drag released with enough power starts the stroke; anything else just ends the drag
-function release(game, shoot) {
+// releasing a placing drag drops the ball; a power drag released with enough power starts the stroke
+function release(game, completed) {
   const drag = game.drag;
+  if (completed && drag?.type === "place") game.handPlaced = true;
   if (
-    shoot &&
+    completed &&
     drag &&
     game.state === "aim" &&
     game.power > MIN_SHOT_POWER &&
