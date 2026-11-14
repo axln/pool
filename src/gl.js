@@ -4,21 +4,21 @@ import { drawTable, createCanvas } from "./table.js";
 
 const SHADER_MODE = { table: 0, shadow: 1, ball: 2 };
 const UNIFORMS = [
-  "rect",
-  "mode",
-  "tex",
-  "m",
-  "col",
-  "n",
-  "px",
-  "alpha",
-  "dark",
-  "clip",
-  "falloff",
+    "rect",
+    "mode",
+    "tex",
+    "m",
+    "col",
+    "n",
+    "px",
+    "alpha",
+    "dark",
+    "clip",
+    "falloff",
 ];
 const QUAD_CORNERS = [-1, -1, 1, -1, -1, 1, 1, 1];
 const BALL_RGB = BALL_COLORS.map((color) =>
-  [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16) / 255),
+    [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16) / 255),
 );
 const ATLAS_TILE = 64; // number atlas: 4 x 4 tiles, tile n at (n % 4, n / 4 | 0)
 const ATLAS_FONT_SIZE = 0.62;
@@ -57,218 +57,229 @@ void main(){
 
 // null when the browser has no WebGL
 export function createRenderer(canvas) {
-  const gl = canvas.getContext("webgl", { antialias: false });
-  if (!gl) return null;
-  const program = linkProgram(gl);
-  const uniforms = Object.fromEntries(
-    UNIFORMS.map((name) => [name, gl.getUniformLocation(program, "u_" + name)]),
-  );
-  createQuadBuffer(gl);
-  gl.enable(gl.BLEND); // straight-alpha source onto a premultiplied canvas
-  gl.blendFuncSeparate(
-    gl.SRC_ALPHA,
-    gl.ONE_MINUS_SRC_ALPHA,
-    gl.ONE,
-    gl.ONE_MINUS_SRC_ALPHA,
-  );
-  const atlasTexture = createAtlasTexture(gl);
-  return { gl, uniforms, atlasTexture, tableTexture: gl.createTexture() };
+    const gl = canvas.getContext("webgl", { antialias: false });
+    if (!gl) return null;
+    const program = linkProgram(gl);
+    const uniforms = Object.fromEntries(
+        UNIFORMS.map((name) => [
+            name,
+            gl.getUniformLocation(program, "u_" + name),
+        ]),
+    );
+    createQuadBuffer(gl);
+    gl.enable(gl.BLEND); // straight-alpha source onto a premultiplied canvas
+    gl.blendFuncSeparate(
+        gl.SRC_ALPHA,
+        gl.ONE_MINUS_SRC_ALPHA,
+        gl.ONE,
+        gl.ONE_MINUS_SRC_ALPHA,
+    );
+    const atlasTexture = createAtlasTexture(gl);
+    return { gl, uniforms, atlasTexture, tableTexture: gl.createTexture() };
 }
 
 function linkProgram(gl) {
-  const program = gl.createProgram();
-  for (const [type, source] of [
-    [gl.VERTEX_SHADER, VERTEX_SHADER],
-    [gl.FRAGMENT_SHADER, FRAGMENT_SHADER],
-  ]) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-      throw new Error(gl.getShaderInfoLog(shader));
-    gl.attachShader(program, shader);
-  }
-  gl.linkProgram(program);
-  gl.useProgram(program);
-  return program;
+    const program = gl.createProgram();
+    for (const [type, source] of [
+        [gl.VERTEX_SHADER, VERTEX_SHADER],
+        [gl.FRAGMENT_SHADER, FRAGMENT_SHADER],
+    ]) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+            throw new Error(gl.getShaderInfoLog(shader));
+        gl.attachShader(program, shader);
+    }
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    return program;
 }
 
 function createQuadBuffer(gl) {
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(QUAD_CORNERS),
-    gl.STATIC_DRAW,
-  );
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(QUAD_CORNERS),
+        gl.STATIC_DRAW,
+    );
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 }
 
 function createAtlasTexture(gl) {
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    drawNumberAtlas(),
-  );
-  gl.generateMipmap(gl.TEXTURE_2D);
-  gl.texParameteri(
-    gl.TEXTURE_2D,
-    gl.TEXTURE_MIN_FILTER,
-    gl.LINEAR_MIPMAP_LINEAR,
-  );
-  return texture;
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        drawNumberAtlas(),
+    );
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        gl.LINEAR_MIPMAP_LINEAR,
+    );
+    return texture;
 }
 
 function drawNumberAtlas() {
-  const size = 4 * ATLAS_TILE,
-    canvas = createCanvas(size, size),
-    context = canvas.getContext("2d");
-  context.fillStyle = "#fff";
-  context.fillRect(0, 0, size, size);
-  context.fillStyle = "#111";
-  context.font = `bold ${ATLAS_TILE * ATLAS_FONT_SIZE}px Arial,sans-serif`;
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  for (let number = 1; number < 16; number++) {
-    context.fillText(
-      number,
-      ((number % 4) + 0.5) * ATLAS_TILE,
-      (((number / 4) | 0) + ATLAS_TEXT_DROP) * ATLAS_TILE,
-    );
-  }
-  return canvas;
+    const size = 4 * ATLAS_TILE,
+        canvas = createCanvas(size, size),
+        context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, size, size);
+    context.fillStyle = "#111";
+    context.font = `bold ${ATLAS_TILE * ATLAS_FONT_SIZE}px Arial,sans-serif`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    for (let number = 1; number < 16; number++) {
+        context.fillText(
+            number,
+            ((number % 4) + 0.5) * ATLAS_TILE,
+            (((number / 4) | 0) + ATLAS_TEXT_DROP) * ATLAS_TILE,
+        );
+    }
+    return canvas;
 }
 
 // redraws the table at the current scale and uploads it; call after every layout
 export function uploadTable(renderer, view) {
-  const gl = renderer.gl;
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  const scale = Math.min(
-    view.scale * view.pixelRatio,
-    (gl.getParameter(gl.MAX_TEXTURE_SIZE) - 1) / TABLE_WIDTH,
-  );
-  gl.bindTexture(gl.TEXTURE_2D, renderer.tableTexture);
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0,
-    gl.RGBA,
-    gl.RGBA,
-    gl.UNSIGNED_BYTE,
-    drawTable(scale),
-  );
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const gl = renderer.gl;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    const scale = Math.min(
+        view.scale * view.pixelRatio,
+        (gl.getParameter(gl.MAX_TEXTURE_SIZE) - 1) / TABLE_WIDTH,
+    );
+    gl.bindTexture(gl.TEXTURE_2D, renderer.tableTexture);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        drawTable(scale),
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 }
 
 export function clearLayer(renderer) {
-  renderer.gl.clearColor(0, 0, 0, 0);
-  renderer.gl.clear(renderer.gl.COLOR_BUFFER_BIT);
+    renderer.gl.clearColor(0, 0, 0, 0);
+    renderer.gl.clear(renderer.gl.COLOR_BUFFER_BIT);
 }
 
 // centre and half-sizes in CSS px
 export function drawTableQuad(
-  renderer,
-  view,
-  centerX,
-  centerY,
-  halfWidth,
-  halfHeight,
-) {
-  renderer.gl.bindTexture(renderer.gl.TEXTURE_2D, renderer.tableTexture);
-  drawQuad(
     renderer,
     view,
-    SHADER_MODE.table,
     centerX,
     centerY,
     halfWidth,
     halfHeight,
-  );
-  renderer.gl.bindTexture(renderer.gl.TEXTURE_2D, renderer.atlasTexture); // balls sample the number atlas
+) {
+    renderer.gl.bindTexture(renderer.gl.TEXTURE_2D, renderer.tableTexture);
+    drawQuad(
+        renderer,
+        view,
+        SHADER_MODE.table,
+        centerX,
+        centerY,
+        halfWidth,
+        halfHeight,
+    );
+    renderer.gl.bindTexture(renderer.gl.TEXTURE_2D, renderer.atlasTexture); // balls sample the number atlas
 }
 
 // a dark disc of `radius` that fades out from `falloff` (fraction of the radius) to its edge,
 // stretched by `stretch` along the unit direction (directionX, directionY), in GL axes
 export function drawShadow(
-  renderer,
-  view,
-  centerX,
-  centerY,
-  radius,
-  { strength, falloff, directionX = 1, directionY = 0, stretch = 1 },
-) {
-  const { gl, uniforms } = renderer,
-    halfSize = radius * stretch;
-  gl.uniform1f(uniforms.alpha, strength);
-  gl.uniform1f(uniforms.falloff, falloff);
-  gl.uniformMatrix3fv(uniforms.m, false, [
-    directionX,
-    -stretch * directionY,
-    0,
-    directionY,
-    stretch * directionX,
-    0,
-    0,
-    0,
-    1,
-  ]);
-  drawQuad(
     renderer,
     view,
-    SHADER_MODE.shadow,
     centerX,
     centerY,
-    halfSize,
-    halfSize,
-  );
+    radius,
+    { strength, falloff, directionX = 1, directionY = 0, stretch = 1 },
+) {
+    const { gl, uniforms } = renderer,
+        halfSize = radius * stretch;
+    gl.uniform1f(uniforms.alpha, strength);
+    gl.uniform1f(uniforms.falloff, falloff);
+    gl.uniformMatrix3fv(uniforms.m, false, [
+        directionX,
+        -stretch * directionY,
+        0,
+        directionY,
+        stretch * directionX,
+        0,
+        0,
+        0,
+        1,
+    ]);
+    drawQuad(
+        renderer,
+        view,
+        SHADER_MODE.shadow,
+        centerX,
+        centerY,
+        halfSize,
+        halfSize,
+    );
 }
 
 // look: { alpha, dark, clip } for sinking balls; clip is [x, y, radius] in device px, flipped y
 export function drawBall(
-  renderer,
-  view,
-  number,
-  orientation,
-  centerX,
-  centerY,
-  radius,
-  look = {},
+    renderer,
+    view,
+    number,
+    orientation,
+    centerX,
+    centerY,
+    radius,
+    look = {},
 ) {
-  const { gl, uniforms } = renderer,
-    { alpha = 1, dark = 1, clip = NO_CLIP } = look;
-  gl.uniformMatrix3fv(uniforms.m, false, orientation); // row-major array read as column-major = transpose, as the shader wants
-  gl.uniform3fv(uniforms.col, BALL_RGB[number > 8 ? number - 8 : number]);
-  gl.uniform1f(uniforms.n, number);
-  gl.uniform1f(uniforms.px, radius * view.pixelRatio);
-  gl.uniform1f(uniforms.alpha, alpha);
-  gl.uniform1f(uniforms.dark, dark);
-  gl.uniform3fv(uniforms.clip, clip);
-  drawQuad(renderer, view, SHADER_MODE.ball, centerX, centerY, radius, radius);
+    const { gl, uniforms } = renderer,
+        { alpha = 1, dark = 1, clip = NO_CLIP } = look;
+    gl.uniformMatrix3fv(uniforms.m, false, orientation); // row-major array read as column-major = transpose, as the shader wants
+    gl.uniform3fv(uniforms.col, BALL_RGB[number > 8 ? number - 8 : number]);
+    gl.uniform1f(uniforms.n, number);
+    gl.uniform1f(uniforms.px, radius * view.pixelRatio);
+    gl.uniform1f(uniforms.alpha, alpha);
+    gl.uniform1f(uniforms.dark, dark);
+    gl.uniform3fv(uniforms.clip, clip);
+    drawQuad(
+        renderer,
+        view,
+        SHADER_MODE.ball,
+        centerX,
+        centerY,
+        radius,
+        radius,
+    );
 }
 
 function drawQuad(
-  renderer,
-  view,
-  mode,
-  centerX,
-  centerY,
-  halfWidth,
-  halfHeight,
+    renderer,
+    view,
+    mode,
+    centerX,
+    centerY,
+    halfWidth,
+    halfHeight,
 ) {
-  const { gl, uniforms } = renderer;
-  gl.uniform1i(uniforms.mode, mode);
-  gl.uniform4f(
-    uniforms.rect,
-    (centerX / view.width) * 2 - 1,
-    1 - (centerY / view.height) * 2,
-    (halfWidth / view.width) * 2,
-    (halfHeight / view.height) * 2,
-  );
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    const { gl, uniforms } = renderer;
+    gl.uniform1i(uniforms.mode, mode);
+    gl.uniform4f(
+        uniforms.rect,
+        (centerX / view.width) * 2 - 1,
+        1 - (centerY / view.height) * 2,
+        (halfWidth / view.width) * 2,
+        (halfHeight / view.height) * 2,
+    );
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
