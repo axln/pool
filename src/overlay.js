@@ -72,6 +72,7 @@ const GUIDE_COLOR = "rgba(255,255,255,.95)";
 const GUIDE_WIDTH = 2.6;
 const MESSAGE_HALF_WIDTH = 210;
 const MESSAGE_HALF_HEIGHT = 44;
+const MESSAGE_PADDING = 28; // space between a long message and the panel edge
 
 // one frame of the overlay; world-space items use the table transform, the rest CSS pixels
 export function drawOverlay(context, view, game) {
@@ -437,12 +438,18 @@ function drawCuePart(context, tipX, [from, to, widthFrom, widthTo], fill) {
 
 function drawMessage(context, view, message) {
   const { centerX, centerY } = tableCenter(view);
+  context.font = "600 20px system-ui,sans-serif";
+  // long messages widen the panel instead of spilling out of it
+  const halfWidth = Math.max(
+    MESSAGE_HALF_WIDTH,
+    context.measureText(message).width / 2 + MESSAGE_PADDING,
+  );
   context.fillStyle = "rgba(8,10,14,.82)";
   context.beginPath();
   context.roundRect(
-    centerX - MESSAGE_HALF_WIDTH,
+    centerX - halfWidth,
     centerY - MESSAGE_HALF_HEIGHT,
-    2 * MESSAGE_HALF_WIDTH,
+    2 * halfWidth,
     2 * MESSAGE_HALF_HEIGHT,
     16,
   );
@@ -450,7 +457,6 @@ function drawMessage(context, view, message) {
   context.textAlign = "center";
   context.textBaseline = "middle";
   context.fillStyle = "#fff";
-  context.font = "600 20px system-ui,sans-serif";
   context.fillText(message, centerX, centerY - 10);
   context.fillStyle = "rgba(255,255,255,.6)";
   context.font = "13px system-ui,sans-serif";
