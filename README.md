@@ -14,6 +14,10 @@ yarn format     # format everything with Prettier (default rules)
 
 Vite and Prettier are the only dependencies, both for development; the game itself uses no libraries. WebGL is required.
 
+## Deploy
+
+`.github/workflows/pages.yml` builds with `yarn build --base=./` and publishes `dist/` to GitHub Pages on every push to `main` (or by hand: `gh workflow run pages.yml`). One-time setup: Settings → Pages → Source = "GitHub Actions". The game is then at https://axln.github.io/pool/.
+
 ## Controls
 
 | Action                             | Mouse                                                    | Touch                               |
