@@ -6,7 +6,9 @@ import {
     PLAY_HEIGHT,
     BALL_RADIUS,
     BALL_RESTITUTION,
-    RAIL_RESTITUTION,
+    RAIL_RESTITUTION_SLOW,
+    RAIL_RESTITUTION_LOSS,
+    RAIL_RESTITUTION_MIN,
     DRAG,
     ROLLING_RESISTANCE,
     SINK_DURATION,
@@ -127,11 +129,19 @@ function collideCushions(balls, events) {
             ball.y += normalY * (BALL_RADIUS - distance);
             if (normalSpeed < 0) {
                 events.push({ type: "rail", speed: -normalSpeed });
-                ball.vx -= (1 + RAIL_RESTITUTION) * normalSpeed * normalX;
-                ball.vy -= (1 + RAIL_RESTITUTION) * normalSpeed * normalY;
+                const restitution = railRestitution(-normalSpeed);
+                ball.vx -= (1 + restitution) * normalSpeed * normalX;
+                ball.vy -= (1 + restitution) * normalSpeed * normalY;
             }
         }
     }
+}
+
+function railRestitution(impactSpeed) {
+    return Math.max(
+        RAIL_RESTITUTION_MIN,
+        RAIL_RESTITUTION_SLOW - RAIL_RESTITUTION_LOSS * impactSpeed,
+    );
 }
 
 function capturePottedBalls(game) {

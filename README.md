@@ -54,7 +54,7 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 
 - Runs once per displayed frame and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
 - Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Pairs are checked in a random order each sub-step, so simultaneous contacts (the break) are not biased by ball order.
-- Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.75.
+- Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.85 for a slow ball falling to about 0.77 at speed 1000 and 0.64 at full power.
 - Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
 - Pockets: a ball is potted when its centre comes within the pocket's capture radius.
 - Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`rollBall`).
@@ -72,17 +72,18 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 
 The constants in `src/constants.js` control the feel:
 
-| Constant                               | Meaning                                                                           |
-| -------------------------------------- | --------------------------------------------------------------------------------- |
-| `MAX_SHOT_SPEED`                       | Cue-ball speed at full power                                                      |
-| `DRAG`, `ROLLING_RESISTANCE`           | Friction: proportional and constant parts                                         |
-| `BALL_RESTITUTION`, `RAIL_RESTITUTION` | Restitution for ball–ball and cushion hits                                        |
-| `CORNER_MOUTH`, `SIDE_MOUTH`           | Half-width of the corner and side pocket mouths                                   |
-| `SIDE_JAW_SLANT`                       | How much the side pocket jaws narrow towards the back; more covers the hole's rim |
-| `POCKETS`                              | Centre and capture radius of each pocket                                          |
-| `SINK_DURATION`                        | Seconds a potted ball takes to drop out of sight                                  |
-| `STRIKE_DURATION`                      | Seconds of cue-stroke animation before the cue ball moves                         |
-| `LAMP_HEIGHT`                          | Height of the lamp over the table centre; lower it for longer shadows             |
+| Constant                                 | Meaning                                                                           |
+| ---------------------------------------- | --------------------------------------------------------------------------------- |
+| `MAX_SHOT_SPEED`                         | Cue-ball speed at full power                                                      |
+| `DRAG`, `ROLLING_RESISTANCE`             | Friction: proportional and constant parts                                         |
+| `BALL_RESTITUTION`                       | Restitution for ball–ball hits                                                    |
+| `RAIL_RESTITUTION_SLOW`, `_LOSS`, `_MIN` | Cushion restitution: value for a slow ball, loss per unit of impact speed, floor  |
+| `CORNER_MOUTH`, `SIDE_MOUTH`             | Half-width of the corner and side pocket mouths                                   |
+| `SIDE_JAW_SLANT`                         | How much the side pocket jaws narrow towards the back; more covers the hole's rim |
+| `POCKETS`                                | Centre and capture radius of each pocket                                          |
+| `SINK_DURATION`                          | Seconds a potted ball takes to drop out of sight                                  |
+| `STRIKE_DURATION`                        | Seconds of cue-stroke animation before the cue ball moves                         |
+| `LAMP_HEIGHT`                            | Height of the lamp over the table centre; lower it for longer shadows             |
 
 Look and sound settings sit at the top of the module that uses them:
 
