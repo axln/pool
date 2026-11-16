@@ -50,7 +50,7 @@ const SIGHT_OFFSET = 17; // from the cushion back into the rail
 const SIGHT_COLOR = "#e3e9f7";
 const FELT_COLOR = "#2f80ba";
 const NOISE_SIZE = 128;
-const NOISE_MAX_ALPHA = 26;
+const NOISE_MAX_ALPHA = 8;
 const NOISE_SEED = 2;
 const FELT_LIGHT_REACH = 0.62; // of the playfield width
 // eased falloffs sampled into many stops: a few linear stops leave a visible ring where the slope changes
