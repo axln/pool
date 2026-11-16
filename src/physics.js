@@ -19,6 +19,7 @@ import {
 } from "./constants.js";
 
 const MAX_SUBSTEP_TRAVEL = 0.4 * BALL_RADIUS; // no ball moves further per sub-step, so none tunnels through another
+const BALL_COLLISION_PASSES = 3; // one pass passes energy on through the rack too slowly
 const MAX_SINK_ENTRY_SPEED = 900;
 const POCKET_PULL = 300;
 const POCKET_DAMPING = 14;
@@ -64,9 +65,13 @@ function moveBalls(balls, time) {
     }
 }
 
+function collideBalls(balls, events) {
+    for (let pass = 0; pass < BALL_COLLISION_PASSES; pass++)
+        collideBallPairs(shuffled(balls), events);
+}
+
 // random pair order: a fixed order broke the rack's mirror symmetry the same way every break
-function collideBalls(allBalls, events) {
-    const balls = shuffled(allBalls);
+function collideBallPairs(balls, events) {
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
             const first = balls[i],
