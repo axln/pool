@@ -4,7 +4,7 @@ Order: 1, 3, 4. After each item: run the self-test (`TEST PASS`), update `README
 
 - [x] **1. Speed-dependent rail bounce.** `RAIL_RESTITUTION` is a flat 0.75 in `collideCushions` (`src/physics.js`). Make it fall with impact speed: hard hits return less energy, soft hits more. Keep the value near 0.75 at typical speeds so shots do not change feel much. Add the new tuning constant(s) to `constants.js` and the README tuning table.
 - [x] **3. Several ball-ball passes per sub-step.** `collideBalls` gives each pair one impulse per sub-step, so energy crosses the tight rack slowly. Run the pair loop 2-3 times per sub-step (named constant). Check the break still conserves energy (self-test) and no balls overlap.
-- [ ] **4. Cloth wobble.** A tiny random sideways nudge on slow-moving balls so slow rolls drift off a perfectly straight line. Keep it small, and none at rest or at high speed. Add the constant(s) to `constants.js` and the README tuning table.
+- [x] **4. Cloth wobble.** A tiny random sideways nudge on slow-moving balls so slow rolls drift off a perfectly straight line. Keep it small, and none at rest or at high speed. Add the constant(s) to `constants.js` and the README tuning table.
 
 Later, in this order, after 1, 3 and 4:
 

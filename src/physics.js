@@ -15,6 +15,8 @@ import {
     POCKETS,
     CUSHION_SEGMENTS,
     clamp,
+    CLOTH_DRIFT,
+    CLOTH_DRIFT_MAX_SPEED,
     shuffled,
 } from "./constants.js";
 
@@ -61,8 +63,22 @@ function moveBalls(balls, time) {
                 ) / speed;
             ball.vx *= slowdown;
             ball.vy *= slowdown;
+            driftOnCloth(ball, speed, time);
         }
     }
+}
+
+// slow balls wander off their line a little, as on real cloth; turning the velocity keeps the speed, so no energy is added
+function driftOnCloth(ball, speed, time) {
+    if (speed >= CLOTH_DRIFT_MAX_SPEED) return;
+    const fade = 1 - speed / CLOTH_DRIFT_MAX_SPEED,
+        turn = (Math.random() - 0.5) * 2 * CLOTH_DRIFT * fade * Math.sqrt(time); // sqrt: the total drift does not depend on the sub-step length
+    const cos = Math.cos(turn),
+        sin = Math.sin(turn);
+    [ball.vx, ball.vy] = [
+        ball.vx * cos - ball.vy * sin,
+        ball.vx * sin + ball.vy * cos,
+    ];
 }
 
 function collideBalls(balls, events) {
