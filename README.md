@@ -36,7 +36,7 @@ Aim is locked while you pull back with the mouse. A pull shorter than 3% power c
 
 The rules are deliberately light, for self-play:
 
-- Standard triangle rack, 8-ball in the centre, cue ball on the head string.
+- Standard triangle rack, randomised each game: 8-ball in the centre, one solid and one stripe in the back corners, the rest shuffled. Cue ball on the head string.
 - The top bar shows whose turn it is, and the player's group once assigned. The first ball potted on the open table (without a scratch) gives that player its group, solids or stripes; the opponent gets the other, announced for a moment in the table centre. The turn passes when a shot pots none of the shooter's own balls or scratches; otherwise the same player shoots again.
 - Scratch: the cue ball returns to the head string and is in hand: press anywhere on the table and drag to move it to any free spot, release to drop it. The aim guide then appears and you shoot as usual; until the shot you can still grab the cue ball (hand cursor over it) and move it again.
 - Potting the 8-ball ends the rack: a win if the shooter's group was already cleared by an earlier shot and the cue ball stayed up, a loss otherwise (the message says why).
@@ -53,7 +53,7 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 **Physics** (`step`)
 
 - Runs once per displayed frame and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
-- Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction.
+- Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Pairs are checked in a random order each sub-step, so simultaneous contacts (the break) are not biased by ball order.
 - Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.75.
 - Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
 - Pockets: a ball is potted when its centre comes within the pocket's capture radius.
@@ -97,7 +97,7 @@ Look and sound settings sit at the top of the module that uses them:
 
 ## Self-test
 
-Open `http://localhost:5173/?test` while `yarn dev` runs. It simulates 20 full-power breaks without rendering and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
+Open `http://localhost:5173/?test` while `yarn dev` runs. It simulates 20 full-power breaks without rendering (each on a freshly randomised rack and with random collision order, so runs differ) and checks that energy never rises, every ball comes to rest, no ball is lost or leaves the table, and no balls overlap. The result appears in the page title and the console as `TEST PASS` or `TEST FAIL: <reason>`.
 
 ## Known limits
 

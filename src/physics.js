@@ -13,6 +13,7 @@ import {
     POCKETS,
     CUSHION_SEGMENTS,
     clamp,
+    shuffled,
 } from "./constants.js";
 
 const MAX_SUBSTEP_TRAVEL = 0.4 * BALL_RADIUS; // no ball moves further per sub-step, so none tunnels through another
@@ -61,7 +62,9 @@ function moveBalls(balls, time) {
     }
 }
 
-function collideBalls(balls, events) {
+// random pair order: a fixed order broke the rack's mirror symmetry the same way every break
+function collideBalls(allBalls, events) {
+    const balls = shuffled(allBalls);
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
             const first = balls[i],

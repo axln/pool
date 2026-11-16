@@ -1,7 +1,10 @@
 // Game state: creating it, racking, and queries other modules share.
-import { PLAY_WIDTH, PLAY_HEIGHT, BALL_RADIUS } from "./constants.js";
+import { PLAY_WIDTH, PLAY_HEIGHT, BALL_RADIUS, shuffled } from "./constants.js";
 
-const RACK_ORDER = [1, 9, 2, 10, 8, 3, 11, 4, 12, 5, 6, 13, 14, 7, 15]; // 8 centre, back corners differ
+const SOLIDS = [1, 2, 3, 4, 5, 6, 7];
+const STRIPES = [9, 10, 11, 12, 13, 14, 15];
+const EIGHT_BALL_PLACE = 4; // centre of the triangle
+const BACK_CORNER_PLACES = [10, 14]; // one solid and one stripe, as in the rules
 const RACK_ROWS = 5;
 const RACK_SPACING = 2 * BALL_RADIUS + 0.3; // a hair apart, so the rack does not start in contact
 const HEAD_SPOT = { x: PLAY_WIDTH / 4, y: PLAY_HEIGHT / 2 };
@@ -14,12 +17,13 @@ export function createGame() {
 }
 
 export function rack(game) {
+    const rackOrder = createRackOrder();
     const balls = [createBall(0, HEAD_SPOT.x, HEAD_SPOT.y)];
     for (let row = 0, index = 0; row < RACK_ROWS; row++) {
         for (let place = 0; place <= row; place++, index++) {
             const x = FOOT_SPOT.x + (row * RACK_SPACING * Math.sqrt(3)) / 2;
             const y = FOOT_SPOT.y + (place - row / 2) * RACK_SPACING;
-            balls.push(createBall(RACK_ORDER[index], x, y));
+            balls.push(createBall(rackOrder[index], x, y));
         }
     }
     Object.assign(game, {
@@ -40,6 +44,18 @@ export function rack(game) {
         aim: 0,
         events: [],
     });
+}
+
+// 8 in the centre, a solid and a stripe in the back corners, the rest random
+function createRackOrder() {
+    const [solid, ...otherSolids] = shuffled(SOLIDS),
+        [stripe, ...otherStripes] = shuffled(STRIPES);
+    const [firstCorner, secondCorner] = shuffled([solid, stripe]);
+    const order = shuffled([...otherSolids, ...otherStripes]);
+    order.splice(EIGHT_BALL_PLACE, 0, 8);
+    order.splice(BACK_CORNER_PLACES[0], 0, firstCorner);
+    order.splice(BACK_CORNER_PLACES[1], 0, secondCorner);
+    return order;
 }
 
 export function createBall(number, x, y) {

@@ -14,8 +14,8 @@ One responsibility per module; dependencies point from `main.js` down to `consta
 
 | Module         | Responsibility                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------- |
-| `constants.js` | World size, tuning constants, pockets, cushions                                                   |
-| `game.js`      | `createGame`, `rack`, `findCueBall`, `isFreeSpot`                                                 |
+| `constants.js` | World size, tuning constants, pockets, cushions, `clamp` and `shuffled` helpers                   |
+| `game.js`      | `createGame`, `rack` (random rack order), `findCueBall`, `isFreeSpot`                             |
 | `physics.js`   | `step` (motion, collisions, potting), `animateSinking` (pocket-drop animation)                    |
 | `rules.js`     | `fire` (shot starts), `settle` (all balls stopped)                                                |
 | `selftest.js`  | `runSelfTest`: headless physics check                                                             |
