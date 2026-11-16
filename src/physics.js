@@ -17,7 +17,7 @@ import {
     clamp,
     CLOTH_DRIFT,
     CLOTH_DRIFT_MAX_SPEED,
-    shuffled,
+    shuffleInPlace,
 } from "./constants.js";
 
 const MAX_SUBSTEP_TRAVEL = 0.4 * BALL_RADIUS; // no ball moves further per sub-step, so none tunnels through another
@@ -42,10 +42,14 @@ export function step(game, dt) {
     }
 }
 
+// the per-sub-step loops use Math.sqrt, not Math.hypot, and no closures or temporary arrays: they allocate, and the garbage causes frame hitches
 function fastestSpeed(balls) {
     let fastest = 0;
     for (const ball of balls)
-        fastest = Math.max(fastest, Math.hypot(ball.vx, ball.vy));
+        fastest = Math.max(
+            fastest,
+            Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy),
+        );
     return fastest;
 }
 
@@ -54,7 +58,7 @@ function moveBalls(balls, time) {
         ball.x += ball.vx * time;
         ball.y += ball.vy * time;
         rollBall(ball, ball.vx * time, ball.vy * time);
-        const speed = Math.hypot(ball.vx, ball.vy);
+        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
         if (speed > 0) {
             const slowdown =
                 Math.max(
@@ -75,18 +79,17 @@ function driftOnCloth(ball, speed, time) {
         turn = (Math.random() - 0.5) * 2 * CLOTH_DRIFT * fade * Math.sqrt(time); // sqrt: the total drift does not depend on the sub-step length
     const cos = Math.cos(turn),
         sin = Math.sin(turn);
-    [ball.vx, ball.vy] = [
-        ball.vx * cos - ball.vy * sin,
-        ball.vx * sin + ball.vy * cos,
-    ];
+    const turnedX = ball.vx * cos - ball.vy * sin;
+    ball.vy = ball.vx * sin + ball.vy * cos;
+    ball.vx = turnedX;
 }
 
 function collideBalls(balls, events) {
     for (let pass = 0; pass < BALL_COLLISION_PASSES; pass++)
-        collideBallPairs(shuffled(balls), events);
+        collideBallPairs(shuffleInPlace(balls), events);
 }
 
-// random pair order: a fixed order broke the rack's mirror symmetry the same way every break
+// random pair order (game.balls is reordered in place, to allocate nothing): a fixed order broke the rack's mirror symmetry the same way every break
 function collideBallPairs(balls, events) {
     for (let i = 0; i < balls.length; i++) {
         for (let j = i + 1; j < balls.length; j++) {
@@ -192,18 +195,19 @@ function capturePottedBalls(game) {
 }
 
 function findCapturingPocket(ball) {
-    const pocket = POCKETS.find(
-        (candidate) =>
-            squaredDistance(ball, candidate) <
-            candidate.radius * candidate.radius,
-    );
-    if (pocket || !isOffTable(ball)) return pocket;
-    // safety net: a ball that escapes the cushions goes down the nearest pocket instead of getting lost
-    return POCKETS.reduce((nearest, candidate) =>
-        squaredDistance(ball, candidate) < squaredDistance(ball, nearest)
-            ? candidate
-            : nearest,
-    );
+    for (const pocket of POCKETS)
+        if (squaredDistance(ball, pocket) < pocket.radius * pocket.radius)
+            return pocket;
+    return isOffTable(ball) ? nearestPocket(ball) : undefined;
+}
+
+// safety net: a ball that escapes the cushions goes down the nearest pocket instead of getting lost
+function nearestPocket(ball) {
+    let nearest = POCKETS[0];
+    for (const pocket of POCKETS)
+        if (squaredDistance(ball, pocket) < squaredDistance(ball, nearest))
+            nearest = pocket;
+    return nearest;
 }
 
 function squaredDistance(ball, point) {
@@ -261,7 +265,7 @@ function bounceOffPocketWall(sinking) {
 // roll without slipping: rotate the ball's orientation about the in-plane axis square to its travel.
 // Updated in place, column by column: this runs per ball per sub-step, and fresh arrays here caused GC hitches.
 function rollBall(ball, dx, dy) {
-    const distance = Math.hypot(dx, dy);
+    const distance = Math.sqrt(dx * dx + dy * dy);
     if (!distance) return;
     const axisX = -dy / distance,
         axisY = dx / distance,

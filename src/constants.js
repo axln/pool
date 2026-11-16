@@ -86,12 +86,17 @@ export function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
-// Fisher-Yates on a copy
 export function shuffled(items) {
-    const result = [...items];
-    for (let i = result.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [result[i], result[j]] = [result[j], result[i]];
+    return shuffleInPlace([...items]);
+}
+
+// Fisher-Yates; allocates nothing, so it is safe in the physics sub-steps
+export function shuffleInPlace(items) {
+    for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1)),
+            kept = items[i];
+        items[i] = items[j];
+        items[j] = kept;
     }
-    return result;
+    return items;
 }
