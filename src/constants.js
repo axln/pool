@@ -13,6 +13,7 @@ export const TABLE_HEIGHT = PLAY_HEIGHT + 2 * FRAME_WIDTH;
 
 export const MAX_SHOT_SPEED = 2600;
 export const BALL_RESTITUTION = 0.96;
+export const BALL_FRICTION = 0.05; // friction between two balls in contact: throws a cut ball off the line of centres
 export const RAIL_RESTITUTION_SLOW = 0.85; // cushion bounce for a barely moving ball
 export const RAIL_RESTITUTION_LOSS = 0.00008; // lost per unit of impact speed: hard hits return less (0.77 at 1000)
 export const RAIL_RESTITUTION_MIN = 0.5;

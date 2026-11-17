@@ -53,7 +53,7 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 **Physics** (`step`)
 
 - Runs once per displayed frame, using a smoothed frame time (`FRAME_TIME_SMOOTHING` in `src/main.js`) so timer jitter does not show as uneven motion, and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
-- Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Pairs are checked in a random order, in 3 passes per sub-step (`BALL_COLLISION_PASSES`), so energy travels through the rack at once and simultaneous contacts (the break) are not biased by ball order.
+- Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Contact friction (`BALL_FRICTION`) also drags the balls along the contact tangent, so a cut ball is thrown up to about 3° off the line of centres towards the cue's path; it only removes sliding, so it never adds energy. Pairs are checked in a random order, in 3 passes per sub-step (`BALL_COLLISION_PASSES`), so energy travels through the rack at once and simultaneous contacts (the break) are not biased by ball order.
 - Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.85 for a slow ball falling to about 0.77 at speed 1000 and 0.64 at full power.
 - Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
 - Cloth drift: below `CLOTH_DRIFT_MAX_SPEED` a ball's direction turns by a small random amount (speed unchanged), so slow rolls wander slightly off a straight line; fast balls are unaffected.
@@ -77,6 +77,7 @@ The constants in `src/constants.js` control the feel:
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `MAX_SHOT_SPEED`                                   | Cue-ball speed at full power                                                                                   |
 | `DRAG`, `ROLLING_RESISTANCE`                       | Friction: proportional and constant parts                                                                      |
+| `BALL_FRICTION`                                    | Friction between two balls in contact (cut-shot throw)                                                         |
 | `BALL_RESTITUTION`                                 | Restitution for ball–ball hits                                                                                 |
 | `RAIL_RESTITUTION_SLOW`, `_LOSS`, `_MIN`           | Cushion restitution: value for a slow ball, loss per unit of impact speed, floor                               |
 | `CLOTH_DRIFT`, `CLOTH_DRIFT_MAX_SPEED`             | Random turn rate of slow balls (radians per √second) and the speed above which it is zero                      |

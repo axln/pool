@@ -6,6 +6,7 @@ import {
     PLAY_HEIGHT,
     BALL_RADIUS,
     BALL_RESTITUTION,
+    BALL_FRICTION,
     RAIL_RESTITUTION_SLOW,
     RAIL_RESTITUTION_LOSS,
     RAIL_RESTITUTION_MIN,
@@ -124,9 +125,25 @@ function collideBallPairs(balls, events) {
                 first.vy -= impulse * normalY;
                 second.vx += impulse * normalX;
                 second.vy += impulse * normalY;
+                throwAlongContact(first, second, normalX, normalY, impulse);
             }
         }
     }
+}
+
+// friction between the touching surfaces drags the balls along the contact tangent, so a cut ball leaves slightly off the line of centres;
+// it only removes sliding (never reverses it), so it cannot add energy
+function throwAlongContact(first, second, normalX, normalY, impulse) {
+    const tangentX = -normalY,
+        tangentY = normalX;
+    const sliding =
+        (second.vx - first.vx) * tangentX + (second.vy - first.vy) * tangentY;
+    const drag = Math.min(BALL_FRICTION * impulse, Math.abs(sliding) / 2),
+        direction = sliding > 0 ? drag : -drag;
+    first.vx += direction * tangentX;
+    first.vy += direction * tangentY;
+    second.vx -= direction * tangentX;
+    second.vy -= direction * tangentY;
 }
 
 function collideCushions(balls, events) {
