@@ -11,12 +11,15 @@ const SIDE_JAW_SLANT = 12; // jaws narrow the side mouth this much per side at t
 export const TABLE_WIDTH = PLAY_WIDTH + 2 * FRAME_WIDTH;
 export const TABLE_HEIGHT = PLAY_HEIGHT + 2 * FRAME_WIDTH;
 
-export const MAX_SHOT_SPEED = 2600;
+export const MAX_SHOT_SPEED = 3070; // was 2600 before balls skidded; skidding costs 2/7 of the energy, so this keeps the distances
 export const BALL_RESTITUTION = 0.96;
 export const BALL_FRICTION = 0.05; // friction between two balls in contact: throws a cut ball off the line of centres
 export const RAIL_RESTITUTION_SLOW = 0.85; // cushion bounce for a barely moving ball
 export const RAIL_RESTITUTION_LOSS = 0.00008; // lost per unit of impact speed: hard hits return less (0.77 at 1000)
 export const RAIL_RESTITUTION_MIN = 0.5;
+export const GRAVITY = 3862; // units/s^2; one unit is 2.54 mm
+export const SLIDING_FRICTION = 0.2; // ball on cloth while it skids, before it grips and rolls
+export const SLIP_EPSILON = 1; // contact-point speed (units/s) below which a ball counts as rolling
 export const DRAG = 0.6;
 export const ROLLING_RESISTANCE = 40;
 export const CLOTH_DRIFT = 0.05; // radians per sqrt(second) a slow ball may turn at random

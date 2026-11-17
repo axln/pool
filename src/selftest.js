@@ -13,6 +13,7 @@ const BREAK_ANGLE_SPREAD = 0.02;
 const TIME_STEP = 1 / 120;
 const MAX_STEPS = 120 * 60;
 const TOTAL_BALLS = 16;
+const SPHERE_INERTIA = 0.4; // of m R^2
 const POSITION_TOLERANCE = 2;
 const OVERLAP_TOLERANCE = 0.5;
 
@@ -38,7 +39,7 @@ function simulateUntilRest(game, breakIndex) {
     do {
         step(game, TIME_STEP);
         const nextEnergy = game.balls.reduce(
-            (sum, ball) => sum + ball.vx * ball.vx + ball.vy * ball.vy,
+            (sum, ball) => sum + ballEnergy(ball),
             0,
         );
         if (!(nextEnergy <= energy * (1 + 1e-9) + 1e-6))
@@ -47,6 +48,18 @@ function simulateUntilRest(game, breakIndex) {
         if (++steps > MAX_STEPS)
             fail(`balls never stopped (break ${breakIndex})`);
     } while (energy > 0);
+}
+
+// twice the kinetic energy per unit mass: movement plus spin (solid sphere, moment of inertia 2/5 m R^2); a skidding ball turns one into the other
+function ballEnergy(ball) {
+    return (
+        ball.vx * ball.vx +
+        ball.vy * ball.vy +
+        SPHERE_INERTIA *
+            BALL_RADIUS *
+            BALL_RADIUS *
+            (ball.wx * ball.wx + ball.wy * ball.wy)
+    );
 }
 
 function checkNoBallLost(game, breakIndex) {

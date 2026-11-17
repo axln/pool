@@ -18,6 +18,9 @@ export function fire(game) {
     const cueBall = findCueBall(game);
     cueBall.vx = Math.cos(game.aim) * MAX_SHOT_SPEED * game.shotPower;
     cueBall.vy = Math.sin(game.aim) * MAX_SHOT_SPEED * game.shotPower;
+    // shortcut: always a centre hit (no spin, so the ball skids first), set wx and wy here from a tip offset to add player-controlled spin
+    cueBall.wx = 0;
+    cueBall.wy = 0;
     Object.assign(game, {
         shotPotted: [],
         scratch: false,

@@ -10,6 +10,9 @@ import {
     RAIL_RESTITUTION_SLOW,
     RAIL_RESTITUTION_LOSS,
     RAIL_RESTITUTION_MIN,
+    GRAVITY,
+    SLIDING_FRICTION,
+    SLIP_EPSILON,
     DRAG,
     ROLLING_RESISTANCE,
     SINK_DURATION,
@@ -25,6 +28,8 @@ import {
 } from "./constants.js";
 
 const MAX_SUBSTEP_TRAVEL = 0.4 * BALL_RADIUS; // no ball moves further per sub-step, so none tunnels through another
+const SPIN_PER_SLIP_FRICTION = 2.5; // solid sphere: friction at the contact point changes the spin 2.5 times as fast (in v/R) as the speed
+const SLIP_PER_FRICTION = 1 + SPIN_PER_SLIP_FRICTION; // so the contact-point slip shrinks 3.5 times as fast as the speed changes
 const BALL_COLLISION_PASSES = 3; // one pass passes energy on through the rack too slowly
 const MAX_SINK_ENTRY_SPEED = 900;
 const POCKET_PULL = 300;
@@ -61,19 +66,47 @@ function moveBalls(balls, time) {
     for (const ball of balls) {
         ball.x += ball.vx * time;
         ball.y += ball.vy * time;
-        rollBall(ball, ball.vx * time, ball.vy * time);
-        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-        if (speed > 0) {
-            const slowdown =
-                Math.max(
-                    0,
-                    speed - (DRAG * speed + ROLLING_RESISTANCE) * time,
-                ) / speed;
-            ball.vx *= slowdown;
-            ball.vy *= slowdown;
-            driftOnCloth(ball, speed, time);
-        }
+        turnBall(ball, time);
+        const slipX = ball.vx - BALL_RADIUS * ball.wy,
+            slipY = ball.vy + BALL_RADIUS * ball.wx,
+            slip = Math.sqrt(slipX * slipX + slipY * slipY);
+        if (slip > SLIP_EPSILON) skidOnCloth(ball, slipX, slipY, slip, time);
+        else rollOnCloth(ball, time);
     }
+}
+
+function turnBall(ball, time) {
+    const spin = Math.sqrt(ball.wx * ball.wx + ball.wy * ball.wy);
+    if (spin > 0) rotateBall(ball, ball.wx / spin, ball.wy / spin, spin * time);
+}
+
+// the cloth drags the contact point against the slip: the ball slows and its spin changes until the slip is gone, then it rolls
+function skidOnCloth(ball, slipX, slipY, slip, time) {
+    const speedChange = Math.min(
+            SLIDING_FRICTION * GRAVITY * time,
+            slip / SLIP_PER_FRICTION, // never past the point where the slip is zero
+        ),
+        directionX = slipX / slip,
+        directionY = slipY / slip,
+        spinChange = (SPIN_PER_SLIP_FRICTION * speedChange) / BALL_RADIUS;
+    ball.vx -= speedChange * directionX;
+    ball.vy -= speedChange * directionY;
+    ball.wy += spinChange * directionX;
+    ball.wx -= spinChange * directionY;
+}
+
+function rollOnCloth(ball, time) {
+    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+    if (speed > 0) {
+        const slowdown =
+            Math.max(0, speed - (DRAG * speed + ROLLING_RESISTANCE) * time) /
+            speed;
+        ball.vx *= slowdown;
+        ball.vy *= slowdown;
+        driftOnCloth(ball, speed, time);
+    }
+    ball.wy = ball.vx / BALL_RADIUS;
+    ball.wx = -ball.vy / BALL_RADIUS;
 }
 
 // slow balls wander off their line a little, as on real cloth; turning the velocity keeps the speed, so no energy is added
@@ -317,14 +350,15 @@ function bounceOffPocketWall(sinking) {
     sinking.vy -= (POCKET_WALL_BOUNCE * outwardSpeed * dy) / distance;
 }
 
-// roll without slipping: rotate the ball's orientation about the in-plane axis square to its travel.
-// Updated in place, column by column: this runs per ball per sub-step, and fresh arrays here caused GC hitches.
+// roll without slipping: turn about the in-plane axis square to the travel (only the pocket drop uses this; balls on the table have a spin)
 function rollBall(ball, dx, dy) {
     const distance = Math.sqrt(dx * dx + dy * dy);
-    if (!distance) return;
-    const axisX = -dy / distance,
-        axisY = dx / distance,
-        angle = distance / BALL_RADIUS;
+    if (distance)
+        rotateBall(ball, -dy / distance, dx / distance, distance / BALL_RADIUS);
+}
+
+// Updated in place, column by column: this runs per ball per sub-step, and fresh arrays here caused GC hitches.
+function rotateBall(ball, axisX, axisY, angle) {
     const cos = Math.cos(angle),
         sin = Math.sin(angle),
         versine = 1 - cos,

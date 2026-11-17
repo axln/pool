@@ -42,7 +42,7 @@ The rules are deliberately light, for self-play:
 - Potting the 8-ball ends the rack: a win if the shooter's group was already cleared by an earlier shot and the cue ball stayed up, a loss otherwise (the message says why).
 - Potted solids collect on the left of the top bar, stripes on the right.
 
-Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
+Not implemented: first-contact fouls, call-pocket, break fouls, spin control (english, and choosing top or back spin).
 
 ## How it works
 
@@ -55,10 +55,11 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 - Runs once per displayed frame, using a smoothed frame time (`FRAME_TIME_SMOOTHING` in `src/main.js`) so timer jitter does not show as uneven motion, and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
 - Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Contact friction (`BALL_FRICTION`) also drags the balls along the contact tangent, so a cut ball is thrown up to about 3° off the line of centres towards the cue's path; it only removes sliding, so it never adds energy. Pairs are checked in a random order, in 3 passes per sub-step (`BALL_COLLISION_PASSES`), so energy travels through the rack at once and simultaneous contacts (the break) are not biased by ball order.
 - Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.85 for a slow ball falling to about 0.77 at speed 1000 and 0.64 at full power.
-- Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
+- Skid, then roll: each ball has a spin (`wx`, `wy`, about the horizontal axes). Where the ball touches the cloth it slips whenever the spin does not match its speed (rolling means `wy = vx / R`, `wx = -vy / R`). While it slips, sliding friction (`SLIDING_FRICTION * GRAVITY`) slows the ball and changes its spin until the slip is gone, then it rolls. A hit ball starts without spin, so it skids first. Collisions change speed only, so the spin left behind makes follow, stun and draw happen by themselves: a cue ball that hits an object ball close by stops, one that hits from far away follows through. Skidding costs a ball 2/7 of its energy, which is why `MAX_SHOT_SPEED` is higher than the old 2600.
+- Rolling friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.
 - Cloth drift: below `CLOTH_DRIFT_MAX_SPEED` a ball's direction turns by a small random amount (speed unchanged), so slow rolls wander slightly off a straight line; fast balls are unaffected.
 - Pockets: a ball is potted when its centre comes within the pocket's capture radius, unless it is fast and enters off-centre: the faster the ball, the closer to head-on it must come (up to `POCKET_ENTRY_NARROWING` of the radius at full shot speed), otherwise it hits the rim and rattles back out (`POCKET_RIM_RESTITUTION`). Slow balls are not affected.
-- Rolling: each ball carries a 3 × 3 orientation matrix, rotated about the axis square to its travel (`rollBall`).
+- Orientation: each ball carries a 3 × 3 orientation matrix, rotated by its spin each sub-step (`rotateBall`); a ball dropping into a pocket just rolls with its movement (`rollBall`).
 
 **Rendering** uses two stacked canvases.
 
@@ -73,21 +74,22 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 
 The constants in `src/constants.js` control the feel:
 
-| Constant                                           | Meaning                                                                                                        |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `MAX_SHOT_SPEED`                                   | Cue-ball speed at full power                                                                                   |
-| `DRAG`, `ROLLING_RESISTANCE`                       | Friction: proportional and constant parts                                                                      |
-| `BALL_FRICTION`                                    | Friction between two balls in contact (cut-shot throw)                                                         |
-| `BALL_RESTITUTION`                                 | Restitution for ball–ball hits                                                                                 |
-| `RAIL_RESTITUTION_SLOW`, `_LOSS`, `_MIN`           | Cushion restitution: value for a slow ball, loss per unit of impact speed, floor                               |
-| `CLOTH_DRIFT`, `CLOTH_DRIFT_MAX_SPEED`             | Random turn rate of slow balls (radians per √second) and the speed above which it is zero                      |
-| `CORNER_MOUTH`, `SIDE_MOUTH`                       | Half-width of the corner and side pocket mouths                                                                |
-| `SIDE_JAW_SLANT`                                   | How much the side pocket jaws narrow towards the back; more covers the hole's rim                              |
-| `POCKETS`                                          | Centre and capture radius of each pocket                                                                       |
-| `POCKET_ENTRY_NARROWING`, `POCKET_RIM_RESTITUTION` | How much closer to head-on a full-speed ball must enter a pocket, and the bounce of a ball rejected at the rim |
-| `SINK_DURATION`                                    | Seconds a potted ball takes to drop out of sight                                                               |
-| `STRIKE_DURATION`                                  | Seconds of cue-stroke animation before the cue ball moves                                                      |
-| `LAMP_HEIGHT`                                      | Height of the lamp over the table centre; lower it for longer shadows                                          |
+| Constant                                           | Meaning                                                                                                                             |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `MAX_SHOT_SPEED`                                   | Cue-ball speed at full power                                                                                                        |
+| `GRAVITY`, `SLIDING_FRICTION`, `SLIP_EPSILON`      | Skidding: gravity (units/s², one unit is 2.54 mm), friction while a ball slips, and the slip speed below which it counts as rolling |
+| `DRAG`, `ROLLING_RESISTANCE`                       | Friction: proportional and constant parts                                                                                           |
+| `BALL_FRICTION`                                    | Friction between two balls in contact (cut-shot throw)                                                                              |
+| `BALL_RESTITUTION`                                 | Restitution for ball–ball hits                                                                                                      |
+| `RAIL_RESTITUTION_SLOW`, `_LOSS`, `_MIN`           | Cushion restitution: value for a slow ball, loss per unit of impact speed, floor                                                    |
+| `CLOTH_DRIFT`, `CLOTH_DRIFT_MAX_SPEED`             | Random turn rate of slow balls (radians per √second) and the speed above which it is zero                                           |
+| `CORNER_MOUTH`, `SIDE_MOUTH`                       | Half-width of the corner and side pocket mouths                                                                                     |
+| `SIDE_JAW_SLANT`                                   | How much the side pocket jaws narrow towards the back; more covers the hole's rim                                                   |
+| `POCKETS`                                          | Centre and capture radius of each pocket                                                                                            |
+| `POCKET_ENTRY_NARROWING`, `POCKET_RIM_RESTITUTION` | How much closer to head-on a full-speed ball must enter a pocket, and the bounce of a ball rejected at the rim                      |
+| `SINK_DURATION`                                    | Seconds a potted ball takes to drop out of sight                                                                                    |
+| `STRIKE_DURATION`                                  | Seconds of cue-stroke animation before the cue ball moves                                                                           |
+| `LAMP_HEIGHT`                                      | Height of the lamp over the table centre; lower it for longer shadows                                                               |
 
 Look and sound settings sit at the top of the module that uses them:
 
@@ -108,4 +110,4 @@ Open `http://localhost:5173/?test` while `yarn dev` runs. It simulates 20 full-p
 
 - If the browser drops the WebGL context, reload the page.
 - The 6 and 9 have no underline; tell them apart by solid versus stripe.
-- Balls roll only in their direction of travel: no side spin, and no skid right after a hit.
+- The player cannot choose spin yet: every shot is a centre hit, and there is no side spin, so cushions and ball–ball hits do not change spin sideways. `fire` in `src/rules.js` is where a cue-tip offset would set the cue ball's starting spin.
