@@ -15,6 +15,8 @@ import { bindInput, aimAt } from "./input.js";
 import { createSound, unlockSound, playSounds } from "./sound.js";
 
 const MAX_FRAME_TIME = 0.05; // longer gaps (a background tab) slow the game down instead of jumping the balls
+const FRAME_TIME_SMOOTHING = 0.2; // share of each new frame time in the step length; timer jitter would otherwise show as uneven motion
+const FIRST_FRAME_TIME = 1 / 60;
 const FPS_INTERVAL = 500; // ms between readouts of the frame-rate counter
 
 // returns the app state, or null without WebGL; headless checks use the return value
@@ -37,6 +39,7 @@ export function main() {
         overlay: canvases.overlay.getContext("2d"),
         canvases,
         lastTime: 0,
+        smoothedTime: FIRST_FRAME_TIME,
         fps: {
             label: document.getElementById("fps"),
             frames: 0,
@@ -70,10 +73,11 @@ function resize(app) {
 }
 
 function frame(app, time) {
-    const dt = Math.min(MAX_FRAME_TIME, (time - app.lastTime) / 1000);
+    const frameTime = Math.min(MAX_FRAME_TIME, (time - app.lastTime) / 1000);
     app.lastTime = time;
+    app.smoothedTime += (frameTime - app.smoothedTime) * FRAME_TIME_SMOOTHING;
     countFrame(app.fps, time);
-    advance(app.game, dt);
+    advance(app.game, app.smoothedTime);
     playSounds(app.sound, app.game.events);
     app.game.events = [];
     render(app.renderer, app.overlay, app.view, app.game);

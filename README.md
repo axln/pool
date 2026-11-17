@@ -52,7 +52,7 @@ Not implemented: first-contact fouls, call-pocket, break fouls, spin (english).
 
 **Physics** (`step`)
 
-- Runs once per displayed frame and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
+- Runs once per displayed frame, using a smoothed frame time (`FRAME_TIME_SMOOTHING` in `src/main.js`) so timer jitter does not show as uneven motion, and is split into sub-steps so no ball moves more than 0.4 radius per sub-step. This prevents tunneling on the break.
 - Ball–ball: equal-mass impulse along the contact normal (restitution 0.96) plus position correction. Pairs are checked in a random order, in 3 passes per sub-step (`BALL_COLLISION_PASSES`), so energy travels through the rack at once and simultaneous contacts (the break) are not biased by ball order.
 - Cushions: 18 line segments (6 noses and their angled pocket jaws), circle-vs-segment collision, restitution 0.85 for a slow ball falling to about 0.77 at speed 1000 and 0.64 at full power.
 - Friction: speed-proportional drag plus a constant rolling deceleration, so balls slow smoothly and stop completely.

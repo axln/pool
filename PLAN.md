@@ -13,4 +13,4 @@ Later, in this order, after 1, 3 and 4:
 - [ ] **6. Slide, then roll.** A per-ball spin state: balls skid after a hit before they grip the cloth, enabling stun, draw and follow. `rollBall` (visual rolling) must use the spin. Also removes the "no skid right after a hit" known limit in the README.
 - [ ] **7. English and cushion friction.** Side spin and friction against the cushions. Builds on the spin state from item 6.
 
-Decided: `dt` stays variable (real frame time, capped; `step` sub-steps by distance). Measured a roll-out at 30, 60 and 144 fps and 1/1000 s: same stop time, positions within about 2 units. A fixed timestep would bring back beating against the refresh rate unless rendering is interpolated.
+Decided: `dt` stays variable (real frame time, capped; `step` sub-steps by distance). Measured a roll-out at 30, 60 and 144 fps and 1/1000 s: same stop time, positions within about 2 units. A fixed timestep would bring back beating against the refresh rate unless rendering is interpolated. Timer jitter showed as uneven motion on screen, so the frame time is smoothed (`FRAME_TIME_SMOOTHING` in `src/main.js`); checked by playing, no stutter.
