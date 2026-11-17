@@ -18,9 +18,10 @@ export function fire(game) {
     const cueBall = findCueBall(game);
     cueBall.vx = Math.cos(game.aim) * MAX_SHOT_SPEED * game.shotPower;
     cueBall.vy = Math.sin(game.aim) * MAX_SHOT_SPEED * game.shotPower;
-    // shortcut: always a centre hit (no spin, so the ball skids first), set wx and wy here from a tip offset to add player-controlled spin
+    // shortcut: always a centre hit (no spin, so the ball skids first), set wx, wy and wz here from a tip offset to add player-controlled spin
     cueBall.wx = 0;
     cueBall.wy = 0;
+    cueBall.wz = 0;
     Object.assign(game, {
         shotPotted: [],
         scratch: false,
@@ -31,6 +32,7 @@ export function fire(game) {
 }
 
 export function settle(game) {
+    for (const ball of game.balls) ball.wz = 0; // a ball may still spin on the spot; that dies with the turn
     if (game.potted.includes(EIGHT_BALL)) {
         endRack(game);
         return;

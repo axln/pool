@@ -58,7 +58,7 @@ function ballEnergy(ball) {
         SPHERE_INERTIA *
             BALL_RADIUS *
             BALL_RADIUS *
-            (ball.wx * ball.wx + ball.wy * ball.wy)
+            (ball.wx * ball.wx + ball.wy * ball.wy + ball.wz * ball.wz)
     );
 }
 

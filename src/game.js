@@ -67,6 +67,7 @@ export function createBall(number, x, y) {
         vy: 0,
         wx: 0, // spin about the horizontal axes in rad/s; rolling is wy = vx / R, wx = -vy / R
         wy: 0,
+        wz: 0, // side spin about the vertical axis
         orientation: [1, 0, 0, 0, 1, 0, 0, 0, 1],
     };
 }

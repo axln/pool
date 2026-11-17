@@ -7,6 +7,8 @@ import {
     BALL_RADIUS,
     BALL_RESTITUTION,
     BALL_FRICTION,
+    CUSHION_FRICTION,
+    SIDE_SPIN_DECAY,
     RAIL_RESTITUTION_SLOW,
     RAIL_RESTITUTION_LOSS,
     RAIL_RESTITUTION_MIN,
@@ -30,6 +32,7 @@ import {
 const MAX_SUBSTEP_TRAVEL = 0.4 * BALL_RADIUS; // no ball moves further per sub-step, so none tunnels through another
 const SPIN_PER_SLIP_FRICTION = 2.5; // solid sphere: friction at the contact point changes the spin 2.5 times as fast (in v/R) as the speed
 const SLIP_PER_FRICTION = 1 + SPIN_PER_SLIP_FRICTION; // so the contact-point slip shrinks 3.5 times as fast as the speed changes
+const BALL_SLIP_PER_FRICTION = 2 + 2 * SPIN_PER_SLIP_FRICTION; // two balls: both move and both spin
 const BALL_COLLISION_PASSES = 3; // one pass passes energy on through the rack too slowly
 const MAX_SINK_ENTRY_SPEED = 900;
 const POCKET_PULL = 300;
@@ -72,12 +75,22 @@ function moveBalls(balls, time) {
             slip = Math.sqrt(slipX * slipX + slipY * slipY);
         if (slip > SLIP_EPSILON) skidOnCloth(ball, slipX, slipY, slip, time);
         else rollOnCloth(ball, time);
+        fadeSideSpin(ball, time);
     }
 }
 
 function turnBall(ball, time) {
-    const spin = Math.sqrt(ball.wx * ball.wx + ball.wy * ball.wy);
-    if (spin > 0) rotateBall(ball, ball.wx / spin, ball.wy / spin, spin * time);
+    const spin = Math.sqrt(
+        ball.wx * ball.wx + ball.wy * ball.wy + ball.wz * ball.wz,
+    );
+    if (spin > 0)
+        rotateBall(
+            ball,
+            ball.wx / spin,
+            ball.wy / spin,
+            ball.wz / spin,
+            spin * time,
+        );
 }
 
 // the cloth drags the contact point against the slip: the ball slows and its spin changes until the slip is gone, then it rolls
@@ -107,6 +120,14 @@ function rollOnCloth(ball, time) {
     }
     ball.wy = ball.vx / BALL_RADIUS;
     ball.wx = -ball.vy / BALL_RADIUS;
+}
+
+// a vertical axis through the contact point does not change the slip, so side spin only fades
+function fadeSideSpin(ball, time) {
+    const fade = SIDE_SPIN_DECAY * time;
+    if (ball.wz > fade) ball.wz -= fade;
+    else if (ball.wz < -fade) ball.wz += fade;
+    else ball.wz = 0;
 }
 
 // slow balls wander off their line a little, as on real cloth; turning the velocity keeps the speed, so no energy is added
@@ -164,19 +185,27 @@ function collideBallPairs(balls, events) {
     }
 }
 
-// friction between the touching surfaces drags the balls along the contact tangent, so a cut ball leaves slightly off the line of centres;
-// it only removes sliding (never reverses it), so it cannot add energy
+// friction between the touching surfaces drags the balls along the contact tangent, so a cut ball leaves slightly off the line of centres
+// and both balls pick up side spin; it only removes sliding (never reverses it), so it cannot add energy
 function throwAlongContact(first, second, normalX, normalY, impulse) {
     const tangentX = -normalY,
         tangentY = normalX;
     const sliding =
-        (second.vx - first.vx) * tangentX + (second.vy - first.vy) * tangentY;
-    const drag = Math.min(BALL_FRICTION * impulse, Math.abs(sliding) / 2),
+        (second.vx - first.vx) * tangentX +
+        (second.vy - first.vy) * tangentY -
+        BALL_RADIUS * (first.wz + second.wz);
+    const drag = Math.min(
+            BALL_FRICTION * impulse,
+            Math.abs(sliding) / BALL_SLIP_PER_FRICTION,
+        ),
         direction = sliding > 0 ? drag : -drag;
     first.vx += direction * tangentX;
     first.vy += direction * tangentY;
     second.vx -= direction * tangentX;
     second.vy -= direction * tangentY;
+    const spinChange = (SPIN_PER_SLIP_FRICTION * direction) / BALL_RADIUS;
+    first.wz += spinChange;
+    second.wz += spinChange;
 }
 
 function collideCushions(balls, events) {
@@ -209,6 +238,12 @@ function collideCushions(balls, events) {
                 const restitution = railRestitution(-normalSpeed);
                 ball.vx -= (1 + restitution) * normalSpeed * normalX;
                 ball.vy -= (1 + restitution) * normalSpeed * normalY;
+                rubAgainstCushion(
+                    ball,
+                    normalX,
+                    normalY,
+                    -(1 + restitution) * normalSpeed,
+                );
             }
         }
     }
@@ -219,6 +254,23 @@ function railRestitution(impactSpeed) {
         RAIL_RESTITUTION_MIN,
         RAIL_RESTITUTION_SLOW - RAIL_RESTITUTION_LOSS * impactSpeed,
     );
+}
+
+// the cushion touches the ball at its equator, so the contact point slides along the wall at v along it minus R wz;
+// friction removes some of that sliding: a steeper rebound and side spin
+function rubAgainstCushion(ball, normalX, normalY, normalImpulse) {
+    const tangentX = -normalY,
+        tangentY = normalX;
+    const sliding =
+        ball.vx * tangentX + ball.vy * tangentY - BALL_RADIUS * ball.wz;
+    const drag = Math.min(
+            CUSHION_FRICTION * normalImpulse,
+            Math.abs(sliding) / SLIP_PER_FRICTION,
+        ),
+        direction = sliding > 0 ? drag : -drag;
+    ball.vx -= direction * tangentX;
+    ball.vy -= direction * tangentY;
+    ball.wz += (SPIN_PER_SLIP_FRICTION * direction) / BALL_RADIUS;
 }
 
 function capturePottedBalls(game) {
@@ -358,21 +410,32 @@ function rollBall(ball, dx, dy) {
 }
 
 // Updated in place, column by column: this runs per ball per sub-step, and fresh arrays here caused GC hitches.
-function rotateBall(ball, axisX, axisY, angle) {
+function rotateBall(ball, axisX, axisY, axisZ, angle) {
     const cos = Math.cos(angle),
         sin = Math.sin(angle),
         versine = 1 - cos,
         orientation = ball.orientation;
     const xx = cos + versine * axisX * axisX,
         xy = versine * axisX * axisY,
-        yy = cos + versine * axisY * axisY;
+        xz = versine * axisX * axisZ,
+        yy = cos + versine * axisY * axisY,
+        yz = versine * axisY * axisZ,
+        zz = cos + versine * axisZ * axisZ;
     for (let column = 0; column < 3; column++) {
         const top = orientation[column],
             middle = orientation[3 + column],
             bottom = orientation[6 + column];
-        orientation[column] = xx * top + xy * middle + sin * axisY * bottom;
-        orientation[3 + column] = xy * top + yy * middle - sin * axisX * bottom;
+        orientation[column] =
+            xx * top +
+            (xy - sin * axisZ) * middle +
+            (xz + sin * axisY) * bottom;
+        orientation[3 + column] =
+            (xy + sin * axisZ) * top +
+            yy * middle +
+            (yz - sin * axisX) * bottom;
         orientation[6 + column] =
-            -sin * axisY * top + sin * axisX * middle + cos * bottom;
+            (xz - sin * axisY) * top +
+            (yz + sin * axisX) * middle +
+            zz * bottom;
     }
 }
