@@ -12,6 +12,9 @@ import {
     DRAG,
     ROLLING_RESISTANCE,
     SINK_DURATION,
+    MAX_SHOT_SPEED,
+    POCKET_ENTRY_NARROWING,
+    POCKET_RIM_RESTITUTION,
     POCKETS,
     CUSHION_SEGMENTS,
     clamp,
@@ -173,7 +176,7 @@ function capturePottedBalls(game) {
     for (let i = balls.length - 1; i >= 0; i--) {
         const ball = balls[i],
             pocket = findCapturingPocket(ball);
-        if (!pocket) continue;
+        if (!pocket || rejectFastEntry(game, ball, pocket)) continue;
         balls.splice(i, 1);
         const speed = Math.hypot(ball.vx, ball.vy),
             entrySpeedScale = Math.min(1, MAX_SINK_ENTRY_SPEED / (speed || 1));
@@ -192,6 +195,41 @@ function capturePottedBalls(game) {
             game.scratch = true;
         }
     }
+}
+
+// a fast ball must come in nearly head-on; otherwise it hits the rim and rattles back out
+function rejectFastEntry(game, ball, pocket) {
+    const dx = ball.x - pocket.x,
+        dy = ball.y - pocket.y,
+        distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance >= pocket.radius || distance === 0) return false; // escaped balls fall in as before
+    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy),
+        inwardSpeed = -(ball.vx * dx + ball.vy * dy) / distance;
+    if (inwardSpeed <= 0) return false;
+    const sidewaysSpeed = Math.sqrt(
+            Math.max(0, speed * speed - inwardSpeed * inwardSpeed),
+        ),
+        missDistance = (distance * sidewaysSpeed) / speed;
+    const narrowing =
+        POCKET_ENTRY_NARROWING * Math.min(1, speed / MAX_SHOT_SPEED);
+    if (missDistance < pocket.radius * (1 - narrowing)) return false;
+    bounceOffPocketRim(
+        game,
+        ball,
+        pocket,
+        dx / distance,
+        dy / distance,
+        inwardSpeed,
+    );
+    return true;
+}
+
+function bounceOffPocketRim(game, ball, pocket, normalX, normalY, inwardSpeed) {
+    game.events.push({ type: "rail", speed: inwardSpeed });
+    ball.x = pocket.x + normalX * pocket.radius;
+    ball.y = pocket.y + normalY * pocket.radius;
+    ball.vx += (1 + POCKET_RIM_RESTITUTION) * inwardSpeed * normalX;
+    ball.vy += (1 + POCKET_RIM_RESTITUTION) * inwardSpeed * normalY;
 }
 
 function findCapturingPocket(ball) {

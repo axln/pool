@@ -8,7 +8,7 @@ Order: 1, 3, 4. After each item: run the self-test (`TEST PASS`), update `README
 
 Later, in this order, after 1, 3 and 4:
 
-- [ ] **2. Pocket entry speed and angle.** `findCapturingPocket` captures any ball whose centre reaches the capture radius. Reject or deflect fast or off-line entries so balls can rattle out of the jaws. Needs tuning so pots do not get much harder.
+- [x] **2. Pocket entry speed and angle.** `findCapturingPocket` captures any ball whose centre reaches the capture radius. Reject or deflect fast or off-line entries so balls can rattle out of the jaws. Needs tuning so pots do not get much harder.
 - [ ] **5. Cut-shot throw.** A friction impulse along the contact tangent in `collideBalls`, so a cut ball leaves slightly off the contact normal.
 - [ ] **6. Slide, then roll.** A per-ball spin state: balls skid after a hit before they grip the cloth, enabling stun, draw and follow. `rollBall` (visual rolling) must use the spin. Also removes the "no skid right after a hit" known limit in the README.
 - [ ] **7. English and cushion friction.** Side spin and friction against the cushions. Builds on the spin state from item 6.
